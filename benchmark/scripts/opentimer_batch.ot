@@ -1,0 +1,15 @@
+set_num_threads 1
+read_celllib -early benchmark/simple/simple_Early.lib
+read_celllib -late  benchmark/simple/simple_Late.lib
+read_verilog       benchmark/simple/simple.v
+read_spef          benchmark/simple/simple.spef
+read_sdc           benchmark/simple/simple.sdc
+cppr -enable
+update_timing
+report_timing -max
+report_timing -min
+report_tns -max
+report_tns -min
+report_wns -max
+report_wns -min
+exit
