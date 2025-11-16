@@ -13,10 +13,11 @@ This directory bundles the scripts and collateral that drive the STA tool compar
 - Holds `BENCHMARK_DESIGN`, which points to a folder under `designs/`. Each design folder contains a `design.env` file with the top module name, netlist/SDC/SPEF filenames, and the Liberty pair to use. Update this file whenever you add a new design or relocate a binary.
 
 ## STA driver scripts
-**現在不能單獨執行腳本，變數需要在run_all.sh設定**
+**現在不能單獨執行腳本，變數需要在run_all.sh設定（或使用下方的環境設定腳本）**
 - `scripts/opensta_batch.tcl` / `scripts/opensta_interactive_commands.tcl`: lightweight wrappers that source `opensta_common.tcl`. The shared script consumes the `BENCHMARK_*` variables provided by `run_all.sh`, reads all design collateral, and emits `report_checks`, `report_tns`, and `report_wns`.
 - `scripts/opentimer_batch.ot`: a template rendered by `run_all.sh` via `envsubst`. It mirrors the OpenSTA flow (load Liberty/Verilog/SDC/SPEF, enable CPPR, run `report_timing`, `report_tns`, and `report_wns`). You can run it manually with `ot-shell --stdin` after exporting the same `BENCHMARK_*` variables.
 - `scripts/ista_simple.tcl`: drives iEDA/iSTA. It loads the design workspace specified by `BENCHMARK_RESULT_DIR`, reads the netlist/lib/SDC/SPEF, and prints both `-delay_type max` and `min` timing reports.
+- `scripts/setup_benchmark_env.sh`：快速載入 `tool_paths.env` 和目標 `design.env`，自動匯出所有 `BENCHMARK_*` 變數。執行一次後即可手動呼叫上面三個 STA 腳本，不必整體跑 `run_all.sh`。建議 `source scripts/setup_benchmark_env.sh` 以便沿用環境。
 
 ## Additional utilities
 - `scripts/summarize_results.py`: parses each tool’s `run.log`, extracts `/usr/bin/time` stats and the reported TNS/WNS values, and writes a consolidated summary. `run_all.sh` runs this automatically, but you can invoke it manually as `scripts/summarize_results.py results/run_<timestamp>`.
