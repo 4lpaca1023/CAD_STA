@@ -209,3 +209,30 @@ iSTA 採用較為單體但內部模組化的架構。它是一個完整、自給
 - **OpenTimer** 擁有令人著迷的高效能架構，但更多是設計為函式庫使用，而非可修改的框架。
 
 **OpenSTA** 提供了堅實、成熟的基礎和豐富的現有功能集，同時其抽象的 `Network` API 和虛擬工廠方法為深度客製化和整合提供了清晰、受支援的途徑。這使它成為建構客製化 STA 解決方案的理想起點。
+
+## 3. 指令相容性與移植筆記
+
+### 3.1 SDC 指令支援差異
+
+| 功能/命令 | OpenSTA | OpenTimer | iSTA | 轉換/備註 |
+| --- | --- | --- | --- | --- |
+| clock port 自身 `set_input_delay` | 報錯 0441，禁止 clock 與自身 port 成為 `-clock`/`get_ports` 的同一對象，命令被忽略（`OpenSTA/doc/messages.txt:180-191`） | 官方 SDC 範例允許在 clock port 上設定 `set_input_delay ... -clock my_clock`（`OpenTimer/wiki/io/sdc.md:33-40`） | `CmdSetInputDelay` 內建 `-clock` 選項並傳回 clock 名稱（`iEDA/src/operation/iSTA/source/module/sdc-cmd/CmdSetIODelay.cc:53-195`） | 在 OpenSTA 需把 clock 口延遲改寫成 `set_clock_latency/set_clock_transition`（`OpenSTA/doc/OpenSTA.fodt:10470-10498`）並僅對資料腳使用 `set_input_delay`。 |
+| `set_input_transition -clock` | 指令只接受 `[-rise|-fall][-min|-max] transition port_list`，沒有 `-clock` 參數（`OpenSTA/doc/OpenSTA.fodt:11290-11311`） | SDC 範例允許 `set_input_transition ... -clock my_clock`（`OpenTimer/wiki/io/sdc.md:42-50`） | `CmdSetInputTransition` 定義了 `-clock` 字串選項並把 clock clamp 到對應 pin（`iEDA/src/operation/iSTA/source/module/sdc-cmd/CmdSetInputTransition.cc:33-147`） | 若要在 OpenSTA 設定 clock slew，需改用 `set_clock_transition`/`set_driving_cell`（`OpenSTA/doc/OpenSTA.fodt:10476-10498,10978-11000`）。 |
+| False/Multicycle/Max-Min Delay 例外 | `set_false_path/set_multicycle_path/set_max_delay/set_min_delay` 皆有完整語法（`OpenSTA/doc/OpenSTA.fodt:10985-11020,11626-12039`） | 官方文件聲明僅支援 5 個 SDC 指令，例外類型完全缺席（`OpenTimer/wiki/io/sdc.md:16-22`） | `Cmd.hh` 中提供 `CmdSetFalsePath/CmdSetMulticyclePath/CmdSetMaxDelay/CmdSetMinDelay` 類別（`iEDA/src/operation/iSTA/source/module/sdc-cmd/Cmd.hh:403-453`） | 在 OpenTimer 需於前處理階段剔除路徑或靠報表後處理；其餘兩個工具可直接沿用 SDC 例外。 |
+| Clock 相關（uncertainty/latency/groups/derate） | 提供 `set_clock_groups/set_clock_latency/set_clock_transition/set_timing_derate` 等指令（`OpenSTA/doc/OpenSTA.fodt:6355-6356,10338-10410`） | 不支援，指令表中只有 `create_clock` 與 I/O 約束（`OpenTimer/wiki/io/sdc.md:16-22`） | `CmdSetClockGroups/CmdSetClockLatency/CmdSetClockUncertainty/CmdSetTimingDerate` 均實作在 `Cmd.hh`（`iEDA/src/operation/iSTA/source/module/sdc-cmd/Cmd.hh:160-400`） | 若需在 OpenTimer 模擬 OCV/clock group，只能透過多角落腳本或外部程式處理；在 OpenSTA/iSTA 可原樣使用。 |
+
+### 3.2 資料載入與報告指令名稱對照
+
+| 目的 | OpenSTA | OpenTimer | iSTA | 移植提示 |
+| --- | --- | --- | --- | --- |
+| 讀取 Liberty | `read_liberty`（`OpenSTA/doc/OpenSTA.fodt:6350-6357`） | `read_celllib`（`OpenTimer/README.md:57-63,219-224`） | `read_liberty`（`iEDA/iSTA使用教學.md:82-96,118-128`） | 將 OpenSTA 腳本搬到 OpenTimer 時需把 `read_liberty` 換成 `read_celllib`；iSTA 延用 OpenSTA 寫法。 |
+| 讀取網表 | `read_verilog` + `link_design`（`OpenSTA/doc/OpenSTA.fodt:6350-6356`） | `read_verilog`（`OpenTimer/README.md:57-66`） | `read_netlist` + `link_design`（`iEDA/iSTA使用教學.md:82-98,118-128`） | iSTA 需要獨立的 `read_netlist` 指令與 `set_design_workspace` 來指定報告輸出（`iEDA/iSTA使用教學.md:82-128`）。 |
+| 讀取 SDC | `read_sdc`（`OpenSTA/doc/OpenSTA.fodt:6360-6367`） | `read_sdc`（`OpenTimer/README.md:57-66,219-225`） | `read_sdc`（`iEDA/iSTA使用教學.md:94-128`） | 3 者指令名稱一致，可直接重用。 |
+| 讀取 SPEF / SDF | `read_spef` 與 `read_sdf` 皆受支援（`OpenSTA/doc/OpenSTA.fodt:6350-6367`） | `read_spef` 由 shell/API 提供（`OpenTimer/README.md:219-224`）但無 `read_sdf` | 官方教學僅列 `read_spef`；未記載 `read_sdf` 指令（`iEDA/iSTA使用教學.md:94-128`） | 如需 SDF 延遲，OpenSTA 可直接 `read_sdf`，OpenTimer/iSTA 則需將 SDF 轉 SPEF 或改用前置 RC tree。 |
+| 報告命令 | `report_checks`/`report_tns`/`report_wns`（`OpenSTA/doc/OpenSTA.fodt:6350-6360`） | `report_timing/report_tns/report_wns`（`OpenTimer/README.md:64-87,219-229`） | `report_timing`（`iEDA/iSTA使用教學.md:97-141`） | Porting 到 OpenTimer 時需以 `report_timing` 取代 OpenSTA 的 `report_checks`；iSTA 與 OpenTimer 相同。 |
+
+### 3.3 實務轉換建議
+
+- **Clock 口延遲建模：** OpenSTA 會拒絕 clock port 的 `set_input_delay`，因此需改寫成 `set_clock_latency/-source` 或 `set_clock_transition` 來描述時鐘延遲，再保留 `set_input_delay` 給資料腳（`OpenSTA/doc/messages.txt:180-191`, `OpenSTA/doc/OpenSTA.fodt:10470-10498`）。OpenTimer 與 iSTA 可直接沿用原 SDC。
+- **輸入 transition 與 clock slew：** 在 OpenSTA 中，用 `set_input_transition` 設 clock 口 slews 會被忽略，必須拆成 `set_clock_transition`（for clock pins）＋`set_input_transition`（僅列資料 ports）。OpenTimer/iSTA 因支援 `-clock`，無須拆分（`OpenSTA/doc/OpenSTA.fodt:10476-10504,11290-11311`, `OpenTimer/wiki/io/sdc.md:42-50`, `iEDA/src/operation/iSTA/source/module/sdc-cmd/CmdSetInputTransition.cc:33-147`）。
+- **OpenTimer 的例外處理：** 由於 shell 官方只允許 5 個 SDC 指令（`OpenTimer/wiki/io/sdc.md:16-22`），在需要 false path、多週期或 OCV 規則時，必須在匯入 OpenTimer 前先以 OpenSTA/iSTA 的 `report_checks` 找出路徑並在網表/SDC 前處理，或在報表輸出後自行過濾。OpenSTA/iSTA 的 `set_false_path/set_clock_groups` 寫法可作為前處理階段的「真實」規格來源（`OpenSTA/doc/OpenSTA.fodt:10338-10410,10985-12039`, `iEDA/src/operation/iSTA/source/module/sdc-cmd/Cmd.hh:160-453`）。
