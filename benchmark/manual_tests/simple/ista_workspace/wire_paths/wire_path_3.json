@@ -1,0 +1,129 @@
+[
+    {
+        "node_0": {
+            "Point": "inp1 (port)",
+            "Capacitance": 0.0063999999999999994,
+            "slew": 20.0,
+            "trans_type": "rise"
+        }
+    },
+    {
+        "net_arc_0": {
+            "Incr": 4e-05,
+            "edge_0": {
+                "wire_from_node": "inp1",
+                "wire_to_node": "inp1:1",
+                "wire_R": 3.4,
+                "wire_C": 0.0011999999999999997,
+                "from_slew": 20.0,
+                "to_slew": 20.000000000020687,
+                "wire_delay": 1.7679999999999997e-05
+            },
+            "edge_1": {
+                "wire_from_node": "inp1:1",
+                "wire_to_node": "inp1:2",
+                "wire_R": 3.5,
+                "wire_C": 0.0013,
+                "from_slew": 20.000000000020687,
+                "to_slew": 20.000000000029285,
+                "wire_delay": 1.365e-05
+            },
+            "edge_2": {
+                "wire_from_node": "inp1:2",
+                "wire_to_node": "u1:a",
+                "wire_R": 3.6,
+                "wire_C": 0.0013999999999999998,
+                "from_slew": 20.000000000029285,
+                "to_slew": 20.000000000031314,
+                "wire_delay": 9e-06
+            }
+        }
+    },
+    {
+        "node_1": {
+            "Point": "u1:a (NAND2_X1)",
+            "Capacitance": 0.001,
+            "slew": 20.0,
+            "trans_type": "rise"
+        }
+    },
+    {
+        "inst_arc_1": {
+            "Incr": 3.923076
+        }
+    },
+    {
+        "node_2": {
+            "Point": "u1:o (NAND2_X1)",
+            "Capacitance": 0.002,
+            "slew": 4.854143,
+            "trans_type": "fall"
+        }
+    },
+    {
+        "net_arc_2": {
+            "Incr": 3e-06,
+            "edge_0": {
+                "wire_from_node": "u1:o",
+                "wire_to_node": "n1:1",
+                "wire_R": 1.1,
+                "wire_C": 0.0002000000000000001,
+                "from_slew": 4.854143,
+                "to_slew": 4.8541430000009145,
+                "wire_delay": 1.98e-06
+            },
+            "edge_1": {
+                "wire_from_node": "n1:1",
+                "wire_to_node": "u4:a",
+                "wire_R": 1.0,
+                "wire_C": 0.0002999999999999999,
+                "from_slew": 4.8541430000009145,
+                "to_slew": 4.854143000001145,
+                "wire_delay": 1.5e-06
+            }
+        }
+    },
+    {
+        "node_3": {
+            "Point": "u4:a (NOR2_X1)",
+            "Capacitance": 0.001,
+            "slew": 4.854143,
+            "trans_type": "fall"
+        }
+    },
+    {
+        "inst_arc_3": {
+            "Incr": 1.311765
+        }
+    },
+    {
+        "node_4": {
+            "Point": "u4:o (NOR2_X1)",
+            "Capacitance": 0.004690000000000001,
+            "slew": 0.813098,
+            "trans_type": "rise"
+        }
+    },
+    {
+        "net_arc_4": {
+            "Incr": 8e-06,
+            "edge_0": {
+                "wire_from_node": "u4:o",
+                "wire_to_node": "f1:d",
+                "wire_R": 2.1,
+                "wire_C": 0.0007000000000000001,
+                "from_slew": 0.813098,
+                "to_slew": 0.8130980000431729,
+                "wire_delay": 8.379e-06
+            }
+        }
+    },
+    {
+        "node_5": {
+            "Point": "f1:d (DFF_X80)",
+            "Capacitance": 0.0034900000000000005,
+            "slew": 0.813098,
+            "trans_type": "rise"
+        }
+    }
+]
