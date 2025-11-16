@@ -27,9 +27,8 @@ resolve_path() {
 OPENSTA_BIN="$(resolve_path "${OPENSTA_BIN:?Set OPENSTA_BIN in tool_paths.env}")"
 OPENTIMER_BIN="$(resolve_path "${OPENTIMER_BIN:?Set OPENTIMER_BIN in tool_paths.env}")"
 ISTA_BIN="$(resolve_path "${ISTA_BIN:?Set ISTA_BIN in tool_paths.env}")"
-TATUM_BIN="$(resolve_path "${TATUM_BIN:?Set TATUM_BIN in tool_paths.env}")"
 
-for bin in "$OPENSTA_BIN" "$OPENTIMER_BIN" "$ISTA_BIN" "$TATUM_BIN"; do
+for bin in "$OPENSTA_BIN" "$OPENTIMER_BIN" "$ISTA_BIN"; do
   if [[ ! -x "$bin" ]]; then
     echo "Executable not found or not executable: $bin" >&2
     exit 1
@@ -139,8 +138,6 @@ prepare_opentimer_script() {
 OT_SCRIPT="$TMP_DIR/opentimer_batch.ot"
 prepare_opentimer_script "$SCRIPT_DIR/scripts/opentimer_batch.ot" "$OT_SCRIPT"
 
-TATUM_TESTS_FILE="$SCRIPT_DIR/tatum/tests.list"
-
 # Persist a bit of metadata so we can trace which design/collateral were used.
 cat >"$RUN_DIR/run_info.txt" <<EOF_INFO
 Design: $DESIGN_NAME
@@ -182,29 +179,6 @@ run_logged "iEDA iSTA script" \
   "$IEDA_RESULT_DIR/run.log" \
   env BENCHMARK_RESULT_DIR="$IEDA_RESULT_DIR" \
   "$ISTA_BIN" "$SCRIPT_DIR/scripts/ista_simple.tcl"
-
-if [[ -f "$TATUM_TESTS_FILE" ]]; then
-  while IFS=';' read -r name rel_path extra; do
-    [[ -z "$name" || "$name" =~ ^# ]] && continue
-    tatum_input="$SCRIPT_DIR/tatum/$rel_path"
-    if [[ ! -f "$tatum_input" ]]; then
-      echo "Warning: Skipping $name, missing input $tatum_input" >&2
-      continue
-    fi
-    extra_args=()
-    if [[ -n "$extra" ]]; then
-      read -r -a extra_args <<<"$extra" || extra_args=()
-    fi
-    sanitized_name="${name//[^[:alnum:]_]/_}"
-    sanitized_name="${sanitized_name:-default}"
-    tatum_result_dir="$(make_tool_dir "Tatum_${sanitized_name}")"
-    run_logged "Tatum $name" \
-      "$tatum_result_dir/run.log" \
-      "$TATUM_BIN" "${extra_args[@]}" "$tatum_input"
-  done <"$TATUM_TESTS_FILE"
-else
-  echo "Warning: No Tatum tests list found at $TATUM_TESTS_FILE" >&2
-fi
 
 popd >/dev/null
 
