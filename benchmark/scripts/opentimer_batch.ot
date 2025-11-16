@@ -1,15 +1,25 @@
+# Configure OpenTimer to run a single-threaded analysis.  The actual values
+# for the BENCHMARK_* variables are injected by run_all.sh via envsubst.
 set_num_threads 1
-read_celllib -early benchmark/simple/simple_Early.lib
-read_celllib -late  benchmark/simple/simple_Late.lib
-read_verilog       benchmark/simple/simple.v
-read_spef          benchmark/simple/simple.spef
-read_sdc           benchmark/simple/simple.sdc
+
+# Common design collateral.
+read_celllib -early ${BENCHMARK_LIB_EARLY}
+read_celllib -late  ${BENCHMARK_LIB_LATE}
+read_verilog       ${BENCHMARK_DESIGN_NETLIST}
+read_spef          ${BENCHMARK_DESIGN_SPEF}
+read_sdc           ${BENCHMARK_DESIGN_SDC}
+
+# Enable CPPR to align with the OpenSTA flow and then build timing data.
 cppr -enable
 update_timing
+
+# Dump timing/summary metrics so the post-processing script can parse them.
 report_timing -max
 report_timing -min
 report_tns -max
 report_tns -min
 report_wns -max
 report_wns -min
+
+# Terminate ot-shell (matching the OpenSTA batch behavior).
 exit
