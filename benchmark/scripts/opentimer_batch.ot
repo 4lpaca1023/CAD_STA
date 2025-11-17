@@ -1,40 +1,118 @@
+#!/usr/bin/env tclsh
+
+namespace eval ::benchmark {}
+
+proc ::benchmark::join_design_path {base path} {
+  if {[file pathtype $path] eq "absolute"} {
+    return [file normalize $path]
+  }
+  return [file normalize [file join $base $path]]
+}
+
+proc ::benchmark::read_design_env {path} {
+  set data {}
+  set fh [open $path r]
+  while {[gets $fh line] >= 0} {
+    regsub {#.*$} $line "" line
+    set line [string trim $line]
+    if {$line eq ""} {
+      continue
+    }
+    if {[regexp {^([^=]+)=(.*)$} $line -> key value]} {
+      dict set data [string trim $key] [string trim $value]
+    }
+  }
+  close $fh
+  return $data
+}
+
+set script_dir [file dirname [info script]]
+
 # === User configuration =====================================================
-# Update the design name and directory to point at your collateral under
-# benchmark/designs or any other path on disk.
-set design_name "simple"
-set design_dir  [file normalize [file join [file dirname [info script]] .. designs simple]]
+# Update the OpenTimer binary path, design name, and directory as needed.
+if {![info exists opentimer_bin]} {
+  set opentimer_bin [file normalize [file join $script_dir .. .. OpenTimer bin ot-shell]]
+}
+if {![info exists design_name]} {
+  set design_name "simple"
+}
+if {![info exists design_dir]} {
+  set design_dir [file normalize [file join $script_dir .. designs $design_name]]
+}
 
-# Derive common file names.  Edit these if your files use different suffixes.
-set lib_early [file join $design_dir "${design_name}_Early.lib"]
-set lib_late  [file join $design_dir "${design_name}_Late.lib"]
-set netlist   [file join $design_dir "${design_name}.v"]
-set sdc_file  [file join $design_dir "${design_name}.sdc"]
-set spef_file [file join $design_dir "${design_name}.spef"]
+# Derive common file names.  Designs can optionally place a design.env file
+# inside the directory to override these defaults automatically.
+set lib_early [::benchmark::join_design_path $design_dir "${design_name}_Early.lib"]
+set lib_late  [::benchmark::join_design_path $design_dir "${design_name}_Late.lib"]
+set netlist   [::benchmark::join_design_path $design_dir "${design_name}.v"]
+set sdc_file  [::benchmark::join_design_path $design_dir "${design_name}.sdc"]
+set spef_file [::benchmark::join_design_path $design_dir "${design_name}.spef"]
 
-puts "INFO: OpenTimer design=$design_name"
-puts "INFO: Design directory=$design_dir"
+set design_env [file join $design_dir design.env]
+if {[file readable $design_env]} {
+  puts "INFO: Loading design configuration: $design_env"
+  set cfg [::benchmark::read_design_env $design_env]
+  if {[dict exists $cfg DESIGN_NAME]} {
+    set design_name [dict get $cfg DESIGN_NAME]
+  }
+  if {[dict exists $cfg DESIGN_LIB_EARLY]} {
+    set lib_early [::benchmark::join_design_path $design_dir [dict get $cfg DESIGN_LIB_EARLY]]
+  }
+  if {[dict exists $cfg DESIGN_LIB_LATE]} {
+    set lib_late [::benchmark::join_design_path $design_dir [dict get $cfg DESIGN_LIB_LATE]]
+  }
+  if {[dict exists $cfg DESIGN_NETLIST]} {
+    set netlist [::benchmark::join_design_path $design_dir [dict get $cfg DESIGN_NETLIST]]
+  }
+  if {[dict exists $cfg DESIGN_SDC]} {
+    set sdc_file [::benchmark::join_design_path $design_dir [dict get $cfg DESIGN_SDC]]
+  }
+  if {[dict exists $cfg DESIGN_SPEF]} {
+    set spef_file [::benchmark::join_design_path $design_dir [dict get $cfg DESIGN_SPEF]]
+  }
+}
 
-# Configure OpenTimer to run a single-threaded analysis.
-set_num_threads 1
+puts "INFO: OpenTimer binary: $opentimer_bin"
+puts "INFO: OpenTimer design: $design_name"
+puts "INFO: Design directory: $design_dir"
 
-# Common design collateral.
-read_celllib -early $lib_early
-read_celllib -late  $lib_late
-read_verilog       $netlist
-read_spef          $spef_file
-read_sdc           $sdc_file
+set commands [list \
+  "set_num_threads 1" \
+  "read_celllib -early $lib_early" \
+  "read_celllib -late  $lib_late" \
+  "read_verilog       $netlist" \
+  "read_spef          $spef_file" \
+  "read_sdc           $sdc_file" \
+  "cppr -enable" \
+  "update_timing" \
+  "report_timing -max" \
+  "report_timing -min" \
+  "report_tns -max" \
+  "report_tns -min" \
+  "report_wns -max" \
+  "report_wns -min" \
+  "exit"]
 
-# Enable CPPR to align with the OpenSTA flow and then build timing data.
-cppr -enable
-update_timing
+set tmpfile [file join $script_dir "opentimer_batch_tmp_[pid].ot"]
+set fh [open $tmpfile w]
+foreach cmd $commands {
+  puts $fh $cmd
+}
+close $fh
 
-# Dump timing/summary metrics so the post-processing script can parse them.
-report_timing -max
-report_timing -min
-report_tns -max
-report_tns -min
-report_wns -max
-report_wns -min
+if {![file executable $opentimer_bin]} {
+  error "OpenTimer binary not found or not executable: $opentimer_bin"
+}
 
-# Terminate ot-shell (matching the OpenSTA batch behavior).
-exit
+puts "INFO: Launching OpenTimer..."
+if {[catch {exec $opentimer_bin --stdin $tmpfile >@stdout 2>@stderr} err options]} {
+  file delete -force $tmpfile
+  if {$err ne ""} {
+    puts stderr $err
+  }
+  if {[info exists options(-errorcode)] && [llength $options(-errorcode)] >= 3} {
+    exit [lindex $options(-errorcode) 2]
+  }
+  exit 1
+}
+file delete -force $tmpfile

@@ -2,6 +2,11 @@
 
 本目錄包含用於測試和比較 OpenSTA、OpenTimer 和 iEDA/iSTA 三個靜態時序分析工具的 TCL 腳本集。所有工具皆使用 TCL 腳本進行批次執行，方便進行客製化修改和工具間比較。
 
+### 近期更新（2025-11-17）
+- 各工具腳本新增 `design.env` 自動解析機制，只需設定 `design_name`/`design_dir` 即可導入專案專屬檔名。
+- OpenTimer 腳本改為 Tcl 包裝器，會生成指令暫存檔並直接呼叫 `ot-shell --stdin`，減少手動輸入。
+- 追加 simple/gcd 兩組測試說明與日誌路徑，方便快速驗證。
+
 ## 目錄
 1. [目錄結構](#目錄結構)
 2. [快速開始](#快速開始)
@@ -24,7 +29,8 @@ benchmark/
 │   │   ├── simple.sdc                # SDC 約束檔
 │   │   ├── simple.spef               # SPEF 寄生參數
 │   │   ├── simple_Early.lib          # Early corner Liberty
-│   │   └── simple_Late.lib           # Late corner Liberty
+│   │   ├── simple_Late.lib           # Late corner Liberty
+│   │   └── design.env                # （可選）設計專屬檔案對應
 │   └── gcd/                          # GCD 測試案例（僅 OpenSTA 完全相容）
 │       ├── gcd_sky130hd.v
 │       ├── gcd_sky130hd.sdc
@@ -41,7 +47,7 @@ benchmark/
 ## 快速開始
 
 ### 執行 OpenSTA
-1. 編輯 `scripts/opensta_common.tcl` 開頭的 `design_name` 與 `design_dir`。
+1. 編輯 `scripts/opensta_common.tcl` 開頭的 `design_name`（必要時可調整 `design_dir`）。若目錄內含 `design.env`，腳本會自動讀取檔名與 top 模組設定。
 2. 執行下列指令：
    ```bash
    cd benchmark/
@@ -49,20 +55,36 @@ benchmark/
    ```
 
 ### 執行 OpenTimer
-1. 編輯 `scripts/opentimer_batch.ot` 開頭的 `design_name` 與 `design_dir`。
-2. 以 stdin 方式餵入腳本即可：
+1. 編輯 `scripts/opentimer_batch.ot` 開頭的 `opentimer_bin`、`design_name`（與 `design_dir`）。若該設計資料夾含 `design.env`，腳本會自動載入檔名。
+2. 直接以 `tclsh` 執行腳本，腳本會自動呼叫 OpenTimer：
    ```bash
    cd benchmark/
-   /path/to/OpenTimer/bin/ot-shell --stdin < scripts/opentimer_batch.ot
+   tclsh scripts/opentimer_batch.ot
    ```
 
 ### 執行 iSTA
-1. 編輯 `scripts/ista_simple.tcl` 開頭的 `design_name` 與 `design_dir`（以及 `result_dir` 若需要自訂輸出位置）。
+1. 編輯 `scripts/ista_simple.tcl` 開頭的 `design_name`（必要時調整 `design_dir`/`result_dir`）。若資料夾含 `design.env`，腳本會自動帶入檔名與 top。
 2. 直接執行腳本：
    ```bash
    cd benchmark/
    /path/to/iEDA/build/bin/iSTA scripts/ista_simple.tcl
    ```
+
+### 切換設計與範例紀錄
+- 若僅需臨時切換設計，可在啟動腳本前以 `set design_name <name>` 或 `set design_dir <path>` 覆寫，接著 `source` 共同腳本。例如：
+  ```tcl
+  # OpenSTA (gcd)
+  set design_name "gcd"
+  set design_dir [file normalize "benchmark/designs/gcd"]
+  source benchmark/scripts/opensta_common.tcl
+  ```
+- 亦可直接修改 `design.env` 以指定 `DESIGN_*` 欄位（netlist、liberty、sdc、spef、top 名稱等），腳本會自動解析。
+- 近期測試：
+  - **simple**：三種工具皆通過；log 見 `results/` 目錄（例如 `results/ieda_ista/run.log`）。
+  - **gcd**：
+    - OpenSTA 可正常執行，log：`benchmark/results/opensta_gcd.log`。
+    - OpenTimer 因 `gcd_sky130hd.spef` 的 `clk I` 條目導致 parser assertion；log：`benchmark/results/opentimer_gcd.log`。
+    - iSTA 在處理 `set_input_delay` 的 wildcard 物件（`req_msg[*]` 等）時找不到對應 pin，因此中止；log：`benchmark/results/ieda_ista_gcd/run.log`。
 
 
 ---
@@ -74,7 +96,7 @@ benchmark/
 **用途：** OpenSTA 的標準執行流程腳本。
 
 **執行步驟：**
-1. 在檔案開頭的 `User configuration` 區塊設定 `design_name`、`design_top` 以及 `design_dir`，其餘路徑（lib/netlist/sdc/spef）會自動依樣板命名產生，可視需要覆寫。
+1. 在檔案開頭的 `User configuration` 區塊設定 `design_name`、`design_top` 以及 `design_dir`（若設計目錄含 `design.env`，會自動帶入 `DESIGN_*` 變數指定的檔名與 top）。
 2. 載入 Liberty 函式庫（min/max corner）：
    ```tcl
    read_liberty -min $lib_early
@@ -102,6 +124,7 @@ benchmark/
 **修改指南：**
 - 只需調整檔案最上方的 `design_name`、`design_top`、`design_dir`，或直接指定 `lib_early` 等檔案變數。
 - 如需不同的報告精度，可調整 `report_checks` 與 `report_timing` 的 `-digits` 參數。
+- 設計資料夾若提供 `design.env`（`DESIGN_*` 參數），會自動覆寫腳本中的檔名設定。
 
 **來源確認：** 腳本內容見 `scripts/opensta_common.tcl`
 
@@ -109,40 +132,34 @@ benchmark/
 
 ### `scripts/opentimer_batch.ot`
 **工具：** OpenTimer  
-**用途：** OpenTimer 的批次腳本，直接由 `ot-shell --stdin` 執行。
+**用途：** Tcl 包裝腳本，會依照設定生成 OpenTimer 指令並呼叫 `ot-shell`。
 
 **執行流程：**
-1. 在檔案開頭設定 `design_name` 與 `design_dir`，腳本會自動指向 `${design_name}_{Early,Late}.lib` 與同名的 `v/sdc/spef` 檔案。
-2. 設定單執行緒模式：
+1. 在檔案開頭設定 `opentimer_bin`、`design_name` 與 `design_dir`（若資料夾含 `design.env`，會依 `DESIGN_*` 參數覆寫路徑），腳本會自動推導 `${design_name}_{Early,Late}.lib` 與同名的 `v/sdc/spef` 檔案；若命名不同，可直接修改 `lib_early` 等變數。
+2. 腳本會建立暫存 OT 指令檔，內容為：
    ```
    set_num_threads 1
-   ```
-3. 載入設計檔案：
-   ```
    read_celllib -early $lib_early
    read_celllib -late  $lib_late
    read_verilog        $netlist
    read_spef           $spef_file
    read_sdc            $sdc_file
-   ```
-   **注意：** OpenTimer 使用 `read_celllib`。
-4. 啟用 CPPR 並更新時序：
-   ```
    cppr -enable
    update_timing
-   ```
-5. 產生 max/min 報告：
-   ```
    report_timing -max
    report_timing -min
    report_tns -max
    report_tns -min
    report_wns -max
    report_wns -min
+   exit
    ```
+   **注意：** OpenTimer 使用 `read_celllib`。
+3. 透過 `exec $opentimer_bin --stdin <tmp>` 執行 ot-shell 並回傳完整 log。
 
 **修改指南：**
-- 調整 `design_name`、`design_dir` 或直接覆寫 `lib_early` 等變數以符合自訂命名。
+- 調整 `opentimer_bin`、`design_name`、`design_dir`，或直接覆寫 `lib_early` 等變數以符合自訂命名。
+- 若設計資料夾提供 `design.env`（`DESIGN_NETLIST`、`DESIGN_LIB_*` 等欄位），腳本會自動讀取並覆寫對應變數。
 - OpenTimer 對 SDC 指令支援有限，若遇錯誤可精簡約束。
 
 **來源確認：** 腳本內容見 `scripts/opentimer_batch.ot`
@@ -154,7 +171,7 @@ benchmark/
 **用途：** iSTA 的執行腳本。
 
 **執行流程：**
-1. 在檔案開頭設定 `design_name`、`design_dir` 與 `result_dir`，同時可依需要修改 `design_top` 或自訂各檔案變數。
+1. 在檔案開頭設定 `design_name`、`design_dir` 與 `result_dir`（若資料夾含 `design.env`，會依 `DESIGN_*` 欄位覆寫檔名與 top），同時可依需要修改 `design_top` 或自訂各檔案變數。
 2. 建立並指向工作空間：
    ```tcl
    file mkdir $result_dir
@@ -180,6 +197,7 @@ benchmark/
 
 **修改指南：**
 - 調整 `design_name`、`design_dir`、`result_dir`，必要時可直接編輯 `lib_files`、`netlist` 等變數。
+- 若資料夾提供 `design.env`，可在其中維護 `DESIGN_NETLIST/DESIGN_LIB_*` 等欄位，由腳本自動讀取。
 - 可根據需求調整 `report_timing` 的 `-digits` 參數。
 
 **來源確認：** 腳本內容見 `scripts/ista_simple.tcl`
@@ -374,8 +392,8 @@ cd /home/a1023/STA
 sta -no_splash -no_init -exit OpenSTA/build/benchmark/scripts/opensta_common.tcl
 
 # OpenTimer（可使用原版或 _fixed，修改 opentimer_batch.ot）
-cd /home/a1023/STA/OpenTimer/build
-../bin/ot-shell ../../benchmark/scripts/opentimer_batch.ot
+cd /home/a1023/STA/benchmark
+tclsh scripts/opentimer_batch.ot
 
 # iSTA（可使用原版或 _fixed，修改 ista_simple.tcl）
 cd /home/a1023/STA
