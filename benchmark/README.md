@@ -1,165 +1,94 @@
-# STA Benchmark Harness 詳細說明
+# STA Benchmark 測試框架
 
-本目錄包含用於比較 OpenSTA、OpenTimer、iEDA/iSTA 和 Tatum 等靜態時序分析工具的完整測試框架。本文件提供所有腳本的詳細使用說明，以及工具間指令相容性的重要資訊。
+本目錄包含用於測試和比較 OpenSTA、OpenTimer 和 iEDA/iSTA 三個靜態時序分析工具的 TCL 腳本集。所有工具皆使用 TCL 腳本進行批次執行，方便進行客製化修改和工具間比較。
 
 ## 目錄
-1. [快速開始](#快速開始)
-2. [核心檔案說明](#核心檔案說明)
-3. [腳本詳細說明](#腳本詳細說明)
+1. [目錄結構](#目錄結構)
+2. [快速開始](#快速開始)
+3. [TCL 腳本說明](#tcl-腳本說明)
 4. [工具指令相容性](#工具指令相容性)
 5. [測試設計說明](#測試設計說明)
 6. [新增設計流程](#新增設計流程)
 
 ---
 
+## 目錄結構
+
+```
+benchmark/
+├── README.md                          # 本文件
+├── tool_paths.env                     # 舊版流程遺留，可忽略
+├── designs/                           # 測試設計目錄
+│   ├── simple/                       # 簡單測試案例（所有工具相容）
+│   │   ├── simple.v                  # Verilog 網表
+│   │   ├── simple.sdc                # SDC 約束檔
+│   │   ├── simple.spef               # SPEF 寄生參數
+│   │   ├── simple_Early.lib          # Early corner Liberty
+│   │   └── simple_Late.lib           # Late corner Liberty
+│   └── gcd/                          # GCD 測試案例（僅 OpenSTA 完全相容）
+│       ├── gcd_sky130hd.v
+│       ├── gcd_sky130hd.sdc
+│       ├── gcd_sky130hd.spef
+│       └── sky130hd_tt.lib
+└── scripts/                           # TCL 執行腳本
+    ├── opensta_common.tcl            # OpenSTA 執行腳本
+    ├── opentimer_batch.ot            # OpenTimer 執行腳本
+    └── ista_simple.tcl               # iSTA 執行腳本
+```
+
+---
+
 ## 快速開始
 
-### 執行完整測試
-```bash
-cd benchmark/
-./run_all.sh
-```
-結果會輸出到 `results/run_<timestamp>/` 目錄，包含各工具的執行紀錄和統計摘要。
+### 執行 OpenSTA
+1. 編輯 `scripts/opensta_common.tcl` 開頭的 `design_name` 與 `design_dir`。
+2. 執行下列指令：
+   ```bash
+   cd benchmark/
+   /path/to/OpenSTA/build/sta -exit scripts/opensta_common.tcl
+   ```
 
-### 手動執行單一工具
-如需單獨測試某個工具而不執行完整流程：
-```bash
-# 1. 載入環境變數
-source scripts/setup_benchmark_env.sh
+### 執行 OpenTimer
+1. 編輯 `scripts/opentimer_batch.ot` 開頭的 `design_name` 與 `design_dir`。
+2. 以 stdin 方式餵入腳本即可：
+   ```bash
+   cd benchmark/
+   /path/to/OpenTimer/bin/ot-shell --stdin < scripts/opentimer_batch.ot
+   ```
 
-# 2. 執行特定工具
-# OpenSTA (batch mode)
-$OPENSTA_BIN -exit scripts/opensta_batch.tcl
+### 執行 iSTA
+1. 編輯 `scripts/ista_simple.tcl` 開頭的 `design_name` 與 `design_dir`（以及 `result_dir` 若需要自訂輸出位置）。
+2. 直接執行腳本：
+   ```bash
+   cd benchmark/
+   /path/to/iEDA/build/bin/iSTA scripts/ista_simple.tcl
+   ```
 
-# OpenTimer (batch mode)
-envsubst < scripts/opentimer_batch.ot | $OPENTIMER_BIN --stdin
-
-# iSTA
-$ISTA_BIN scripts/ista_simple.tcl
-```
-
----
-
-## 核心檔案說明
-
-### `tool_paths.env`
-**用途：** 集中管理所有 STA 工具的可執行檔路徑和測試設計選擇。
-
-**內容結構：**
-```bash
-# 工具路徑（相對於專案根目錄或絕對路徑）
-OPENSTA_BIN=OpenSTA/build/sta
-OPENTIMER_BIN=OpenTimer/bin/ot-shell
-ISTA_BIN=iEDA/build_dynamic/src/operation/bin/iSTA
-TATUM_BIN=tatum/build/tatum_test/tatum_test
-
-# 選擇測試設計
-BENCHMARK_DESIGN=simple  # 或 gcd
-```
-
-**修改指南：**
-- 若重新編譯工具或改變安裝位置，更新對應的 `*_BIN` 路徑
-- 切換測試設計時，修改 `BENCHMARK_DESIGN` 為 `designs/` 下的目錄名稱
-- 相對路徑會自動解析為專案根目錄的相對位置
-
-**來源確認：** 此檔案由 `run_all.sh` 和 `setup_benchmark_env.sh` 讀取（第 15-20 行）。
 
 ---
 
-### `run_all.sh`
-**用途：** 自動化執行所有 STA 工具的完整測試流程。
+## TCL 腳本說明
 
-**執行流程：**
-1. 讀取 `tool_paths.env` 中的工具路徑和設計選擇
-2. 載入 `designs/$BENCHMARK_DESIGN/design.env` 取得設計檔案資訊
-3. 建立時間戳記的結果目錄 `results/run_<timestamp>/`
-4. 依序執行：
-   - OpenSTA (batch mode + interactive mode)
-   - OpenTimer (batch mode + interactive mode)
-   - iEDA/iSTA
-   - Tatum（若有設定 `TATUM_BIN`）
-5. 呼叫 `summarize_results.py` 產生統計摘要
-
-**輸出結構：**
-```
-results/run_20250116_143022/
-├── run_info.txt           # 本次執行的設計資訊
-├── summary.txt            # 各工具的時序與效能摘要
-├── OpenSTA_batch/
-│   └── run.log           # OpenSTA batch mode 執行紀錄
-├── OpenSTA_interactive/
-│   └── run.log
-├── OpenTimer_batch/
-│   └── run.log
-├── OpenTimer_interactive/
-│   └── run.log
-└── iEDA_iSTA/
-    └── run.log
-```
-
-**執行限制：**
-- **必須從 `benchmark/` 目錄執行**
-- 腳本會自動設定所有 `BENCHMARK_*` 環境變數
-- 個別 STA 腳本（`opensta_batch.tcl` 等）依賴這些變數，**無法單獨執行**
-
-**來源確認：** 腳本內容見 `run_all.sh` 第 1-200 行。
-
----
-
-## 腳本詳細說明
-
-### `scripts/setup_benchmark_env.sh`
-**用途：** 快速載入測試環境變數，允許手動執行單一工具而不需完整的 `run_all.sh` 流程。
-
-**功能：**
-1. 讀取 `tool_paths.env` 取得設計選擇（`BENCHMARK_DESIGN`）
-2. 載入對應的 `designs/$BENCHMARK_DESIGN/design.env`
-3. 將所有設計檔案路徑轉換為絕對路徑並匯出為環境變數：
-   - `BENCHMARK_DESIGN_NAME`: 設計名稱
-   - `BENCHMARK_DESIGN_TOP`: 頂層模組名稱
-   - `BENCHMARK_DESIGN_NETLIST`: Verilog 網表路徑
-   - `BENCHMARK_DESIGN_SDC`: SDC 約束檔路徑
-   - `BENCHMARK_DESIGN_SPEF`: SPEF 寄生參數檔路徑
-   - `BENCHMARK_LIB_EARLY`: Early timing library 路徑
-   - `BENCHMARK_LIB_LATE`: Late timing library 路徑
-
-**使用方式：**
-```bash
-# 必須使用 source 以保留環境變數
-source scripts/setup_benchmark_env.sh
-
-# 執行後會顯示已匯出的變數
-已匯出共用環境：
-  BENCHMARK_DESIGN_NAME=simple
-  BENCHMARK_DESIGN_TOP=simple
-  ...
-```
-
-**來源確認：** 腳本內容見 `scripts/setup_benchmark_env.sh` 第 1-60 行。
-
----
-
-### OpenSTA 相關腳本
-
-#### `scripts/opensta_common.tcl`
-**用途：** OpenSTA 的共用執行流程，被 batch 和 interactive 模式重複使用。
+### `scripts/opensta_common.tcl`
+**工具：** OpenSTA  
+**用途：** OpenSTA 的標準執行流程腳本。
 
 **執行步驟：**
-1. 讀取 `BENCHMARK_*` 環境變數（由 `run_all.sh` 或 `setup_benchmark_env.sh` 提供）
+1. 在檔案開頭的 `User configuration` 區塊設定 `design_name`、`design_top` 以及 `design_dir`，其餘路徑（lib/netlist/sdc/spef）會自動依樣板命名產生，可視需要覆寫。
 2. 載入 Liberty 函式庫（min/max corner）：
    ```tcl
-   read_liberty -min $BENCHMARK_LIB_EARLY
-   read_liberty -max $BENCHMARK_LIB_LATE
+   read_liberty -min $lib_early
+   read_liberty -max $lib_late
    ```
 3. 讀取 Verilog 網表並連結設計：
    ```tcl
-   read_verilog $BENCHMARK_DESIGN_NETLIST
-   link_design $BENCHMARK_DESIGN_TOP
+   read_verilog $netlist
+   link_design $design_top
    ```
 4. 套用 SDC 約束和 SPEF 寄生參數：
    ```tcl
-   read_sdc $BENCHMARK_DESIGN_SDC
-   read_spef $BENCHMARK_DESIGN_SPEF
+   read_sdc $sdc_file
+   read_spef $spef_file
    ```
 5. 啟用時鐘傳播分析：
    ```tcl
@@ -170,165 +99,96 @@ source scripts/setup_benchmark_env.sh
    - `report_tns -min/-max`: 總負餘裕（Total Negative Slack）
    - `report_wns -min/-max`: 最壞負餘裕（Worst Negative Slack）
 
-**來源確認：** 腳本內容見 `scripts/opensta_common.tcl` 第 1-30 行。
+**修改指南：**
+- 只需調整檔案最上方的 `design_name`、`design_top`、`design_dir`，或直接指定 `lib_early` 等檔案變數。
+- 如需不同的報告精度，可調整 `report_checks` 與 `report_timing` 的 `-digits` 參數。
 
-#### `scripts/opensta_batch.tcl`
-**用途：** OpenSTA 批次模式的入口點。
-
-**功能：** 
-- 載入 `opensta_common.tcl` 執行分析流程
-- 自動結束 OpenSTA（`exit`），適合自動化測試
-
-**執行方式：**
-```bash
-source scripts/setup_benchmark_env.sh
-$OPENSTA_BIN -exit scripts/opensta_batch.tcl
-```
-
-**來源確認：** 腳本內容見 `scripts/opensta_batch.tcl` 第 1-7 行。
-
-#### `scripts/opensta_interactive_commands.tcl`
-**用途：** OpenSTA 互動模式的入口點，模擬從 stdin 輸入指令的場景。
-
-**功能：**
-- 與 batch 模式使用相同的 `opensta_common.tcl` 流程
-- 支援透過管道或重導向輸入指令
-- 執行完畢後自動退出
-
-**執行方式：**
-```bash
-source scripts/setup_benchmark_env.sh
-$OPENSTA_BIN < scripts/opensta_interactive_commands.tcl
-```
-
-**來源確認：** 腳本內容見 `scripts/opensta_interactive_commands.tcl` 第 1-18 行。
+**來源確認：** 腳本內容見 `scripts/opensta_common.tcl`
 
 ---
 
-### OpenTimer 相關腳本
-
-#### `scripts/opentimer_batch.ot`
-**用途：** OpenTimer 的執行腳本範本，透過 `envsubst` 替換環境變數後執行。
+### `scripts/opentimer_batch.ot`
+**工具：** OpenTimer  
+**用途：** OpenTimer 的批次腳本，直接由 `ot-shell --stdin` 執行。
 
 **執行流程：**
-1. 設定單執行緒模式：
+1. 在檔案開頭設定 `design_name` 與 `design_dir`，腳本會自動指向 `${design_name}_{Early,Late}.lib` 與同名的 `v/sdc/spef` 檔案。
+2. 設定單執行緒模式：
    ```
    set_num_threads 1
    ```
-2. 載入 Liberty 函式庫（early/late corner）：
+3. 載入設計檔案：
    ```
-   read_celllib -early ${BENCHMARK_LIB_EARLY}
-   read_celllib -late  ${BENCHMARK_LIB_LATE}
+   read_celllib -early $lib_early
+   read_celllib -late  $lib_late
+   read_verilog        $netlist
+   read_spef           $spef_file
+   read_sdc            $sdc_file
    ```
-   **注意：** OpenTimer 使用 `read_celllib` 而非 OpenSTA 的 `read_liberty`
-3. 讀取設計檔案：
-   ```
-   read_verilog ${BENCHMARK_DESIGN_NETLIST}
-   read_spef    ${BENCHMARK_DESIGN_SPEF}
-   read_sdc     ${BENCHMARK_DESIGN_SDC}
-   ```
-4. 啟用 CPPR（Common Path Pessimism Removal）：
+   **注意：** OpenTimer 使用 `read_celllib`。
+4. 啟用 CPPR 並更新時序：
    ```
    cppr -enable
-   ```
-5. 更新時序並產生報告：
-   ```
    update_timing
-   report_timing -max/-min
-   report_tns -max/-min
-   report_wns -max/-min
+   ```
+5. 產生 max/min 報告：
+   ```
+   report_timing -max
+   report_timing -min
+   report_tns -max
+   report_tns -min
+   report_wns -max
+   report_wns -min
    ```
 
-**執行方式：**
-```bash
-source scripts/setup_benchmark_env.sh
-envsubst < scripts/opentimer_batch.ot | $OPENTIMER_BIN --stdin
-```
+**修改指南：**
+- 調整 `design_name`、`design_dir` 或直接覆寫 `lib_early` 等變數以符合自訂命名。
+- OpenTimer 對 SDC 指令支援有限，若遇錯誤可精簡約束。
 
-**來源確認：** 腳本內容見 `scripts/opentimer_batch.ot` 第 1-24 行。
+**來源確認：** 腳本內容見 `scripts/opentimer_batch.ot`
 
 ---
 
-### iSTA 相關腳本
+### `scripts/ista_simple.tcl`
+**工具：** iEDA/iSTA  
+**用途：** iSTA 的執行腳本。
 
-#### `scripts/ista_simple.tcl`
-**用途：** iEDA/iSTA 的執行腳本。
-
-**特殊功能：**
-1. 設定設計工作空間：
+**執行流程：**
+1. 在檔案開頭設定 `design_name`、`design_dir` 與 `result_dir`，同時可依需要修改 `design_top` 或自訂各檔案變數。
+2. 建立並指向工作空間：
    ```tcl
+   file mkdir $result_dir
    set_design_workspace $result_dir
    ```
-   - 若 `run_all.sh` 提供 `BENCHMARK_RESULT_DIR`，使用該目錄
-   - 否則回退到 `results/ieda_ista/` 作為預設位置
-2. 讀取設計檔案：
+3. 讀取設計檔案：
    ```tcl
-   read_netlist $netlist           # 注意：iSTA 使用 read_netlist 而非 read_verilog
-   read_liberty $lib_files         # 可接受 list 形式的多個 Liberty 檔
+   read_netlist $netlist           ;# iSTA 使用 read_netlist
+   read_liberty $lib_files         ;# 可一次指定多個 Liberty
    link_design $design_top
-   read_sdc $sdc_file
+   read_sdc  $sdc_file
    read_spef $spef_file
    ```
-3. 產生 max 和 min 時序報告：
+4. 產生 max 和 min 時序報告：
    ```tcl
    report_timing -delay_type max -digits 4
    report_timing -delay_type min -digits 4
    ```
 
 **關鍵差異：**
-- iSTA 使用 `read_netlist` 而非 `read_verilog`
-- 需要明確設定工作空間目錄
-- `read_liberty` 可一次接受多個檔案（list 形式）
+- iSTA 仍需工作空間（`set_design_workspace`）。
+- `read_liberty` 接受 list 參數，可同時指定 early/late。
 
-**來源確認：** 腳本內容見 `scripts/ista_simple.tcl` 第 1-44 行。
+**修改指南：**
+- 調整 `design_name`、`design_dir`、`result_dir`，必要時可直接編輯 `lib_files`、`netlist` 等變數。
+- 可根據需求調整 `report_timing` 的 `-digits` 參數。
 
----
-
-### 結果分析工具
-
-#### `scripts/summarize_results.py`
-**用途：** 解析各工具的執行紀錄，提取效能和時序指標，產生統計摘要。
-
-**功能：**
-1. 掃描結果目錄下的所有工具子目錄
-2. 從 `run.log` 提取：
-   - 執行時間（real/user/sys）：來自 `/usr/bin/time` 輸出
-   - WNS（Worst Negative Slack）：max/min
-   - TNS（Total Negative Slack）：max/min
-3. 針對不同工具使用專屬的解析器：
-   - **OpenSTA**: 解析 `tns/wns min/max <value>` 格式
-   - **OpenTimer**: 從倒數四個數字提取（順序：wns_min, wns_max, tns_min, tns_max）
-   - **iSTA**: 解析表格式報告（`| Endpoint | ... | Slack |` 和 `| Clock | ... | TNS |`）
-   - **Tatum**: 僅提取執行時間（無時序指標）
-
-**輸出格式：**
-```
-Run directory: /path/to/results/run_20250116_143022
-=====================================
-Tool: OpenSTA batch
-  Log: /path/to/run.log
-  Runtime: real=1.23s user=1.15s sys=0.08s
-  WNS (max/min): -10.724 / 5.432
-  TNS (max/min): -20.800 / 10.123
--
-Tool: OpenTimer batch
-  ...
-```
-
-**執行方式：**
-```bash
-# 由 run_all.sh 自動呼叫
-# 或手動執行：
-scripts/summarize_results.py results/run_<timestamp>
-```
-
-**來源確認：** 程式碼見 `scripts/summarize_results.py` 第 1-220 行。
+**來源確認：** 腳本內容見 `scripts/ista_simple.tcl`
 
 ---
 
 ## 工具指令相容性
 
-此部分整理各 STA 工具在 SDC 指令和檔案載入上的差異，協助您在工具間移植腳本或理解測試失敗的原因。
+此部分整理各 STA 工具在 SDC 指令和檔案載入上的差異，協助您在工具間移植 TCL 腳本或理解執行失敗的原因。
 
 ### SDC 指令支援差異
 
@@ -359,6 +219,78 @@ scripts/summarize_results.py results/run_<timestamp>
 - OpenTimer 指令：`OpenTimer/README.md:57-229`
 - iSTA 指令：`iEDA/iSTA使用教學.md:82-141`
 
+### TCL 腳本移植範例
+
+#### 從 OpenSTA 移植到 OpenTimer
+
+**OpenSTA 腳本：**
+```tcl
+read_liberty -min design_Early.lib
+read_liberty -max design_Late.lib
+read_verilog design.v
+link_design top_module
+read_sdc design.sdc
+read_spef design.spef
+set_propagated_clock [all_clocks]
+report_checks -path_delay max
+report_wns -max
+```
+
+**OpenTimer 腳本：**
+```tcl
+# 1. 將 read_liberty 改為 read_celllib
+read_celllib -early design_Early.lib
+read_celllib -late design_Late.lib
+
+# 2. read_verilog 和 read_sdc 相同
+read_verilog design.v
+read_sdc design.sdc
+read_spef design.spef
+
+# 3. OpenTimer 使用 cppr -enable 而非 set_propagated_clock
+cppr -enable
+
+# 4. 需要先 update_timing，report_checks 改為 report_timing
+update_timing
+report_timing -max
+report_wns -max
+```
+
+#### 從 OpenSTA 移植到 iSTA
+
+**OpenSTA 腳本：**
+```tcl
+read_liberty -min design_Early.lib
+read_liberty -max design_Late.lib
+read_verilog design.v
+link_design top_module
+read_sdc design.sdc
+read_spef design.spef
+report_checks -path_delay max
+```
+
+**iSTA 腳本：**
+```tcl
+# 1. 需要先設定工作空間
+set_design_workspace ./ista_workspace
+
+# 2. read_verilog 改為 read_netlist
+read_netlist design.v
+
+# 3. read_liberty 可接受 list，不分 -min/-max
+read_liberty [list design_Early.lib design_Late.lib]
+
+# 4. link_design 相同
+link_design top_module
+
+# 5. read_sdc 和 read_spef 相同
+read_sdc design.sdc
+read_spef design.spef
+
+# 6. report_checks 改為 report_timing，需指定 delay_type
+report_timing -delay_type max
+```
+
 ### 實務轉換建議
 
 1. **Clock 口延遲建模**
@@ -383,139 +315,256 @@ scripts/summarize_results.py results/run_<timestamp>
 
 ---
 
-## 測試設計說明
+## 測試設計
 
-### `designs/simple/`
+### Simple 電路
+
+**設計檔案位置：** `designs/simple/`
+
 **來源：** OpenTimer 官方範例（`OpenTimer/example/simple/`）
 
-**特性：**
-- 極簡設計：單一模組、純量埠（無匯流排）
-- 檔案組成：
-  - `simple.v`: Verilog 網表
-  - `simple.sdc`: 基本 SDC 約束（create_clock, set_input_delay, set_output_delay）
-  - `simple.spef`: 簡短的 SPEF 寄生參數
-  - `simple_Early.lib` / `simple_Late.lib`: Early/Late timing corner
-- **相容性：** 所有工具（OpenSTA/OpenTimer/iSTA/Tatum）皆可成功執行
+**電路架構：**
+```
+┌───────────┐
+│   clk_in  ├──┐
+└───────────┘  │
+               │ (clock)
+┌───────────┐  │   ┌──────────┐   ┌──────────┐   ┌──────────┐
+│   inp1    ├──┴──►│   DFF    ├──►│  NAND2   ├──►│   DFF    ├──► out
+└───────────┘      └──────────┘   └─────┬────┘   └──────────┘
+┌───────────┐                            │
+│   inp2    ├────────────────────────────┘
+└───────────┘
+```
 
-**預期結果：**
-- WNS: ~-10.7 ns (VIOLATED)
-- TNS: ~-20.8 ns
+**輸入/輸出：**
+- `clk_in`：時鐘訊號
+- `inp1`：資料輸入 1（有 setup/hold delay，synchronous to clk_in）
+- `inp2`：資料輸入 2（asynchronous）
+- `out`：資料輸出
 
-**來源確認：** `benchmark/README.md` 第 35 行原說明，來自 `OpenTimer/example/simple/`
+**檔案清單：**
+```
+designs/simple/
+├── simple.v          # Gate-level Verilog netlist
+├── simple.sdc        # SDC constraints (原始版本)
+├── simple.spef       # Parasitic extraction
+├── simple_fixed.sdc  # OpenSTA 相容版本（移除 clock port 的 set_input_delay）
+└── fake.lib          # Liberty timing library (minimal model)
+```
 
-### `designs/gcd/`
+**時序特性：**
+- **Clock Period:** 10.0 ns (100 MHz)
+- **Input Delay (inp1):** 2.0 ns (相對於 clk_in)
+- **Input Transition:** 0.2 ns
+- **Output Load:** 0.005 pF
+- **預期 WNS:** ~-10.7 ns (VIOLATED)
+- **預期 TNS:** ~-20.8 ns
+
+**SDC 版本差異：**
+- `simple.sdc`：原始版本，在 clock port (`clk_in`) 使用 `set_input_delay`，OpenTimer 和 iSTA 可執行
+- `simple_fixed.sdc`：OpenSTA 相容版本，使用 `set_clock_latency -source` 替代 clock port 的 `set_input_delay`
+
+**工具相容性：** 所有工具（OpenSTA/OpenTimer/iSTA）皆可執行（需選擇正確的 SDC 版本）
+
+**使用方式：**
+```bash
+# OpenSTA（需使用 _fixed 版本，修改 opensta_common.tcl）
+cd /home/a1023/STA
+sta -no_splash -no_init -exit OpenSTA/build/benchmark/scripts/opensta_common.tcl
+
+# OpenTimer（可使用原版或 _fixed，修改 opentimer_batch.ot）
+cd /home/a1023/STA/OpenTimer/build
+../bin/ot-shell ../../benchmark/scripts/opentimer_batch.ot
+
+# iSTA（可使用原版或 _fixed，修改 ista_simple.tcl）
+cd /home/a1023/STA
+/home/a1023/STA/iEDA/build/bin/iSTA ./benchmark/scripts/ista_simple.tcl
+```
+
+---
+
+### GCD 電路
+
+**設計檔案位置：** `designs/gcd/`
+
 **來源：** OpenSTA sky130 測試案例（`OpenSTA/test/gcd_sky130hd/`）
 
-**特性：**
-- 真實工業設計：GCD（Greatest Common Divisor）電路
-- 檔案組成：
-  - `gcd_sky130hd.v`: 包含匯流排埠的 Verilog 網表
-  - `gcd_sky130hd.sdc`: 複雜 SDC 約束（含匯流排物件 `req_msg[*]`）
-  - `gcd_sky130hd.spef`: 真實 PnR 工具產生的 SPEF
-  - `sky130hd_tt.lib`: SkyWater 130nm PDK 標準元件庫
-- **相容性問題：**
-  - **OpenTimer**: SPEF 解析失敗（`clk I` 條目與主輸出斷言衝突）
-  - **iSTA**: SDC 解析失敗（無法處理 `req_msg[*]` 格式，需逐位元展開）
-  - **僅 OpenSTA 可直接執行**
+**電路功能：** Greatest Common Divisor (最大公因數) 計算器
 
-**已知限制：**
-直到資料被清理（sanitize）前，預期只有 OpenSTA 能在 `gcd` 上成功。切換 `BENCHMARK_DESIGN` 或解讀執行紀錄時需注意這些限制。
+**輸入/輸出：**
+- `clk`：時鐘訊號
+- `reset`：重置訊號
+- `req_val`：請求有效訊號
+- `req_msg[31:0]`：輸入資料（32-bit bus）
+- `resp_val`：回應有效訊號
+- `resp_msg[15:0]`：輸出結果（16-bit bus）
 
-**來源確認：** `benchmark/README.md` 第 40-47 行原說明，來自 `OpenSTA/test/gcd_sky130hd/`
+**檔案清單：**
+```
+designs/gcd/
+├── gcd.v          # Gate-level Verilog netlist
+├── gcd_Early.lib  # Early corner Liberty library (fast process)
+├── gcd_Late.lib   # Late corner Liberty library (slow process)
+├── gcd.sdc        # SDC constraints (原始版本)
+├── gcd.spef       # Parasitic extraction (from real PnR tool)
+├── gcd_fixed.sdc  # OpenSTA 相容版本
+└── wrapper.v      # RTL wrapper (未使用)
+```
+
+**時序特性：**
+- **Clock Period:** 5.0 ns (200 MHz)
+- **Clock Uncertainty:** 0.3 ns
+- **Input Delay (all data ports):** 0.5 ns (相對於 clk)
+- **Output Delay (all output ports):** 0.5 ns
+- **Multi-Corner:** Early/Late corner libraries for setup/hold analysis
+
+**SDC 版本差異：**
+- `gcd.sdc`：原始版本，包含 bus notation (`req_msg[*]`)，包含 clock port 的 `set_input_delay` 和 `set_input_transition -clock`
+- `gcd_fixed.sdc`：OpenSTA 相容版本，使用 `set_clock_latency -source` 和 `set_clock_transition` 替代 clock port 約束
+
+**工具相容性限制：**
+- **OpenSTA：** 可直接執行（需使用 `_fixed` 版本）
+- **OpenTimer：** SPEF 解析失敗（`clk I` 條目與主輸出斷言衝突）
+- **iSTA：** SDC 解析失敗（無法處理 `req_msg[*]` 格式，需逐位元展開成 `req_msg[0]`, `req_msg[1]`, ...）
+
+**使用方式：**
+```bash
+# OpenSTA（需使用 _fixed 版本，修改 opensta_common.tcl 中的設計路徑）
+cd /home/a1023/STA
+sta -no_splash -no_init -exit OpenSTA/build/benchmark/scripts/opensta_common.tcl
+
+# OpenTimer（SPEF 解析問題，需修正 SPEF 檔或設計）
+# OpenTimer 目前無法執行 GCD 設計
+
+# iSTA（SDC bus notation 問題，需展開匯流排）
+# iSTA 目前無法執行 GCD 設計
+```
+
+**注意事項：**
+- GCD 電路為真實工業設計，包含複雜的控制邏輯和資料路徑
+- 支援 Multi-Corner Analysis（Early/Late corner）
+- 目前只有 OpenSTA 可成功執行完整分析
+- OpenTimer 和 iSTA 需要對設計檔案進行清理（sanitize）才能執行
 
 ---
 
 ## 新增設計流程
 
-1. **建立設計目錄**
+若要在 benchmark 中新增測試設計：
+
+1. **建立設計目錄：**
    ```bash
    mkdir designs/<new_design>
    ```
 
-2. **複製設計檔案**
+2. **準備設計檔案：**
    將以下檔案放入新目錄：
    - Verilog 網表（`.v`）
    - SDC 約束檔（`.sdc`）
    - SPEF 寄生參數（`.spef`）
-   - Liberty 函式庫（`*_Early.lib`, `*_Late.lib`）
+   - Liberty 函式庫（`*_Early.lib`, `*_Late.lib` 或單一 `.lib`）
 
-3. **建立 `design.env`**
+3. **修改 TCL 腳本：**
+   編輯對應工具的 TCL 腳本（`opensta_common.tcl`, `opentimer_batch.ot`, `ista_simple.tcl`）：
+   - 更新檔案路徑變數指向新設計
+   - 調整 top module 名稱
+   - 確認 Liberty library 路徑正確
+
+4. **驗證相容性：**
+   - 檢查 SDC 語法是否符合目標工具支援範圍
+   - 確認 SPEF 格式正確（特別是 OpenTimer）
+   - 測試匯流排 notation 是否被工具支援（特別是 iSTA）
+
+5. **執行測試：**
    ```bash
-   # designs/<new_design>/design.env
-   DESIGN_TOP=<頂層模組名稱>
-   DESIGN_NETLIST=<網表檔名>.v
-   DESIGN_SDC=<SDC檔名>.sdc
-   DESIGN_SPEF=<SPEF檔名>.spef
-   DESIGN_LIB_EARLY=<Early庫檔名>.lib
-   DESIGN_LIB_LATE=<Late庫檔名>.lib
+   # 依照前述「使用方式」執行各工具的 TCL 腳本
+   # 比對輸出報告確認時序分析結果
    ```
-
-4. **更新 `tool_paths.env`**
-   ```bash
-   BENCHMARK_DESIGN=<new_design>
-   ```
-
-5. **執行測試**
-   ```bash
-   ./run_all.sh
-   ```
-
-6. **檢查結果**
-   - 查看 `results/run_<timestamp>/summary.txt` 確認各工具執行狀態
-   - 若有工具失敗，參考[工具指令相容性](#工具指令相容性)章節調整 SDC 或檔案格式
-
-**來源確認：** `benchmark/README.md` 第 50-54 行原流程。
 
 ---
 
-## 疑難排解
+## 問題排除
 
-### 執行時找不到工具
-**症狀：** `run_all.sh` 報錯 "Binary not found"
+### OpenSTA 報錯 0441：Clock port input delay
+**症狀：** 執行時出現 "Warning 0441" 訊息，指出 clock port 無法使用 `set_input_delay`
 
 **解決方案：**
-1. 確認 `tool_paths.env` 中的路徑正確
-2. 檢查工具是否已編譯（例如 `OpenSTA/build/sta` 存在）
-3. 若使用相對路徑，確保從 `benchmark/` 目錄執行
+1. 使用 `_fixed.sdc` 版本的約束檔（已將 clock port 約束改為 `set_clock_latency`）
+2. 或手動修改 SDC：將 `set_input_delay -clock clk_in [get_ports clk_in]` 改為 `set_clock_latency -source 2.0 [get_clocks clk_in]`
+
+**來源：** OpenSTA 文件 `OpenSTA/doc/messages.txt:180-191`, `OpenSTA/doc/OpenSTA.fodt:10470-10498`
 
 ### OpenTimer SPEF 解析失敗
-**症狀：** 執行 `gcd` 設計時 OpenTimer 中止
+**症狀：** 執行 `gcd` 設計時 OpenTimer 中止，報告 SPEF parsing error
 
 **解決方案：**
 1. 使用 `simple` 設計驗證 OpenTimer 基本功能
-2. 若需執行 `gcd`，需重新產生相容的 SPEF 或前處理現有檔案
+2. `gcd` 設計的 SPEF 檔案（來自 OpenSTA 測試案例）與 OpenTimer 解析器不相容，需重新產生或手動修正
 
-**來源：** `benchmark/README.md` 第 41-42 行已知問題。
+**來源：** 已知問題，見「測試設計 > GCD 電路 > 工具相容性限制」
 
-### iSTA SDC 解析錯誤
-**症狀：** "object list is empty" 或匯流排名稱無法辨識
-
-**解決方案：**
-1. 將 SDC 中的 `[get_ports req_msg[*]]` 展開為個別位元
-2. 或參考 `simple` 設計使用純量埠
-
-**來源：** `benchmark/README.md` 第 44-46 行已知問題。
-
-### 環境變數未設定
-**症狀：** 單獨執行腳本時報錯 "Missing required environment variable"
+### iSTA SDC 匯流排語法錯誤
+**症狀：** 執行時報告 "object list is empty" 或匯流排名稱無法辨識
 
 **解決方案：**
-```bash
-source scripts/setup_benchmark_env.sh
-```
+1. iSTA 不支援 SDC 中的 bus notation (`req_msg[*]`)
+2. 需要將匯流排約束展開為個別位元：
+   ```tcl
+   # 原始寫法（iSTA 不支援）
+   set_input_delay -clock clk 0.5 [get_ports req_msg[*]]
+   
+   # 展開寫法（iSTA 可接受）
+   set_input_delay -clock clk 0.5 [get_ports {req_msg[0] req_msg[1] ... req_msg[31]}]
+   ```
+3. 或參考 `simple` 設計使用純量埠（scalar ports）
 
-**來源：** `scripts/setup_benchmark_env.sh` 第 20-30 行設計。
+**來源：** 已知問題，見「測試設計 > GCD 電路 > 工具相容性限制」
+
+### TCL 腳本路徑錯誤
+**症狀：** 執行腳本時報告 "file not found" 或 "cannot read file"
+
+**解決方案：**
+1. 確認工作目錄位置與腳本中的相對路徑匹配
+2. 檢查腳本內的檔案路徑變數設定：
+   ```tcl
+   # 範例：opensta_common.tcl 中的路徑設定
+   set design_dir "/home/a1023/STA/benchmark/designs/simple"
+   set netlist "$design_dir/simple.v"
+   ```
+3. 若切換設計，需同步修改所有相關路徑變數
+
+### 工具可執行檔找不到
+**症狀：** "command not found" 或 "No such file or directory"
+
+**解決方案：**
+1. 確認工具已正確編譯：
+   ```bash
+   # OpenSTA
+   ls /home/a1023/STA/OpenSTA/build/app/sta
+   
+   # OpenTimer
+   ls /home/a1023/STA/OpenTimer/bin/ot-shell
+   
+   # iSTA
+   ls /home/a1023/STA/iEDA/build/bin/iSTA
+   ```
+2. 使用絕對路徑執行或確認相對路徑正確
+3. 參考「快速開始」章節的執行命令
 
 ---
 
 ## 參考文件
 
-- **OpenSTA 官方文件：** `OpenSTA/doc/OpenSTA.fodt`
-- **OpenTimer 文件：** `OpenTimer/README.md`, `OpenTimer/wiki/io/sdc.md`
-- **iSTA 使用教學：** `iEDA/iSTA使用教學.md`
-- **工具分析報告：** `../STA_tool_analysis_report.md`
+- **OpenSTA 官方文件：** `/home/a1023/STA/OpenSTA/doc/OpenSTA.fodt`
+- **OpenTimer 文件：** 
+  - `/home/a1023/STA/OpenTimer/README.md`
+  - `/home/a1023/STA/OpenTimer/wiki/io/sdc.md`
+- **iSTA 使用教學：** `/home/a1023/STA/iEDA/iSTA使用教學.md`
+- **工具分析報告：** `/home/a1023/STA/STA_tool_analysis_report.md`
+- **本目錄執行分析：** `/home/a1023/STA/benchmark/STA_excute_analysis_report.md`
 
 ---
 
-**最後更新：** 2025-11-16  
-**維護者：** STA Benchmark Team
+**最後更新：** 2025-01-16  
+**文件說明：** 本文件記錄 TCL-based STA benchmark 架構，支援 OpenSTA、OpenTimer、iSTA 三種工具的時序分析流程

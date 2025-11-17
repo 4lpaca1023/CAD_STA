@@ -1,38 +1,25 @@
-namespace eval ::benchmark {}
-
-# Guard utility identical to the OpenSTA version; stops execution when
-# run_all.sh forgets to export a required path.
-proc ::benchmark::require_env {name} {
-  if {![info exists ::env($name)] || $::env($name) eq ""} {
-    error "Missing required environment variable $name"
-  }
-  return $::env($name)
-}
-
 set script_dir [file dirname [info script]]
 
-# Allow run_all.sh to inject a unique workspace via BENCHMARK_RESULT_DIR.
-# Fall back to the legacy shared folder so manual runs still work.
-if {[info exists ::env(BENCHMARK_RESULT_DIR)] && $::env(BENCHMARK_RESULT_DIR) ne ""} {
-  set result_dir [file normalize $::env(BENCHMARK_RESULT_DIR)]
-} else {
-  set result_dir [file normalize [file join $script_dir .. results ieda_ista]]
-}
+# === User configuration =====================================================
+# Update the design name/top and directory to match your collateral.
+set design_name "simple"
+set design_top  $design_name
+set design_dir  [file normalize [file join $script_dir .. designs simple]]
+set result_dir  [file normalize [file join $script_dir .. results ieda_ista]]
+
+# Derive all design files.  Edit these if your naming differs.
+set lib_files [list \
+  [file join $design_dir "${design_name}_Early.lib"] \
+  [file join $design_dir "${design_name}_Late.lib"]]
+set netlist   [file join $design_dir "${design_name}.v"]
+set sdc_file  [file join $design_dir "${design_name}.sdc"]
+set spef_file [file join $design_dir "${design_name}.spef"]
 
 file mkdir $result_dir
 set_design_workspace $result_dir
 
-# Resolve all design collateral up front once.
-set design_name [::benchmark::require_env "BENCHMARK_DESIGN_NAME"]
-set design_top  [::benchmark::require_env "BENCHMARK_DESIGN_TOP"]
-set netlist     [file normalize [::benchmark::require_env "BENCHMARK_DESIGN_NETLIST"]]
-set sdc_file    [file normalize [::benchmark::require_env "BENCHMARK_DESIGN_SDC"]]
-set spef_file   [file normalize [::benchmark::require_env "BENCHMARK_DESIGN_SPEF"]]
-set lib_files [list \
-  [file normalize [::benchmark::require_env "BENCHMARK_LIB_EARLY"]] \
-  [file normalize [::benchmark::require_env "BENCHMARK_LIB_LATE"]]]
-
 puts "INFO: iSTA benchmark design: $design_name"
+puts "INFO: Design directory: $design_dir"
 puts "INFO: Design workspace: $result_dir"
 
 # Standard iSTA flow: read in all design inputs and constraints/SPEF.

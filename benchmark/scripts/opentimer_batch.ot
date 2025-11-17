@@ -1,13 +1,28 @@
-# Configure OpenTimer to run a single-threaded analysis.  The actual values
-# for the BENCHMARK_* variables are injected by run_all.sh via envsubst.
+# === User configuration =====================================================
+# Update the design name and directory to point at your collateral under
+# benchmark/designs or any other path on disk.
+set design_name "simple"
+set design_dir  [file normalize [file join [file dirname [info script]] .. designs simple]]
+
+# Derive common file names.  Edit these if your files use different suffixes.
+set lib_early [file join $design_dir "${design_name}_Early.lib"]
+set lib_late  [file join $design_dir "${design_name}_Late.lib"]
+set netlist   [file join $design_dir "${design_name}.v"]
+set sdc_file  [file join $design_dir "${design_name}.sdc"]
+set spef_file [file join $design_dir "${design_name}.spef"]
+
+puts "INFO: OpenTimer design=$design_name"
+puts "INFO: Design directory=$design_dir"
+
+# Configure OpenTimer to run a single-threaded analysis.
 set_num_threads 1
 
 # Common design collateral.
-read_celllib -early ${BENCHMARK_LIB_EARLY}
-read_celllib -late  ${BENCHMARK_LIB_LATE}
-read_verilog       ${BENCHMARK_DESIGN_NETLIST}
-read_spef          ${BENCHMARK_DESIGN_SPEF}
-read_sdc           ${BENCHMARK_DESIGN_SDC}
+read_celllib -early $lib_early
+read_celllib -late  $lib_late
+read_verilog       $netlist
+read_spef          $spef_file
+read_sdc           $sdc_file
 
 # Enable CPPR to align with the OpenSTA flow and then build timing data.
 cppr -enable
