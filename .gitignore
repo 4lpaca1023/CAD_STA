@@ -16,7 +16,7 @@ Makefile
 *.cmake
 
 # Ignore general analysis/output artifacts
-results/
+
 reports/
 *.rpt
 *.out

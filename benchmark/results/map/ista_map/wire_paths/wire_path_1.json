@@ -1,0 +1,52 @@
+[
+    {
+        "node_0": {
+            "Point": "_361_:CLK (DFFSR)",
+            "Capacitance": 0.00932314,
+            "slew": 0.0,
+            "trans_type": "rise"
+        }
+    },
+    {
+        "inst_arc_0": {
+            "Incr": 0.365532
+        }
+    },
+    {
+        "node_1": {
+            "Point": "_361_:Q (DFFSR)",
+            "Capacitance": 0.09363856911659241,
+            "slew": 0.234771,
+            "trans_type": "rise"
+        }
+    },
+    {
+        "node_2": {
+            "Point": "_330_:A (BUFX2)",
+            "Capacitance": 0.00930577,
+            "slew": 0.234771,
+            "trans_type": "rise"
+        }
+    },
+    {
+        "inst_arc_2": {
+            "Incr": 8.7424
+        }
+    },
+    {
+        "node_3": {
+            "Point": "_330_:Y (BUFX2)",
+            "Capacitance": 10.0,
+            "slew": 12.263036,
+            "trans_type": "rise"
+        }
+    },
+    {
+        "node_4": {
+            "Point": "sr_4_ (port)",
+            "Capacitance": 10.0,
+            "slew": 12.263036,
+            "trans_type": "rise"
+        }
+    }
+]

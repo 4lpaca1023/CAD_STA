@@ -1,1 +1,2 @@
 直接看benchmark
+simple的結果在/bench/result/simple

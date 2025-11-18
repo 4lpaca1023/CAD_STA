@@ -1,0 +1,81 @@
+OpenSTA 2.7.0 d7cb9be1ca Copyright (c) 2025, Parallax Software, Inc.
+License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>
+
+This is free software, and you are free to change and redistribute it
+under certain conditions; type `show_copying' for details. 
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show_warranty'.
+Warning: /home/a1023/STA/benchmark/designs/gcd/gcd_sky130hd.v line 527, module sky130_fd_sc_hd__tapvpwrvgnd_1 not found. Creating black box for TAP_11.
+INFO: Running report_checks -path_delay min
+Startpoint: _412_ (rising edge-triggered flip-flop clocked by clk)
+Endpoint: _412_ (rising edge-triggered flip-flop clocked by clk)
+Path Group: clk
+Path Type: min
+
+    Delay      Time   Description
+-------------------------------------------------------------
+   0.0000    0.0000   clock clk (rise edge)
+   0.4314    0.4314   clock network delay (propagated)
+   0.0000    0.4314 ^ _412_/CLK (sky130_fd_sc_hd__dfxtp_1)
+   0.3465    0.7780 ^ _412_/Q (sky130_fd_sc_hd__dfxtp_1)
+   0.1172    0.8951 ^ _290_/X (sky130_fd_sc_hd__a32o_1)
+   0.0001    0.8952 ^ _412_/D (sky130_fd_sc_hd__dfxtp_1)
+             0.8952   data arrival time
+
+   0.0000    0.0000   clock clk (rise edge)
+   0.4314    0.4314   clock network delay (propagated)
+   0.0000    0.4314   clock reconvergence pessimism
+             0.4314 ^ _412_/CLK (sky130_fd_sc_hd__dfxtp_1)
+  -0.0207    0.4107   library hold time
+             0.4107   data required time
+-------------------------------------------------------------
+             0.4107   data required time
+            -0.8952   data arrival time
+-------------------------------------------------------------
+             0.4844   slack (MET)
+
+
+INFO: Running report_checks -path_delay max
+Startpoint: _414_ (rising edge-triggered flip-flop clocked by clk)
+Endpoint: resp_msg[15] (output port clocked by clk)
+Path Group: clk
+Path Type: max
+
+    Delay      Time   Description
+-------------------------------------------------------------
+   0.0000    0.0000   clock clk (rise edge)
+   0.4285    0.4285   clock network delay (propagated)
+   0.0000    0.4285 ^ _414_/CLK (sky130_fd_sc_hd__dfxtp_4)
+   0.3701    0.7985 v _414_/Q (sky130_fd_sc_hd__dfxtp_4)
+   0.1232    0.9217 v _214_/Y (sky130_fd_sc_hd__nor2b_4)
+   0.3233    1.2450 v _215_/X (sky130_fd_sc_hd__maj3_2)
+   0.3250    1.5699 v _216_/X (sky130_fd_sc_hd__maj3_2)
+   0.3607    1.9306 v _217_/X (sky130_fd_sc_hd__maj3_2)
+   0.3774    2.3081 v _218_/X (sky130_fd_sc_hd__maj3_2)
+   0.3966    2.7047 v _219_/X (sky130_fd_sc_hd__maj3_2)
+   0.2478    2.9524 ^ _222_/Y (sky130_fd_sc_hd__o211ai_4)
+   0.1566    3.1091 v _225_/Y (sky130_fd_sc_hd__a311oi_4)
+   0.3379    3.4469 ^ _228_/Y (sky130_fd_sc_hd__o311ai_4)
+   0.1721    3.6190 v _231_/Y (sky130_fd_sc_hd__a311oi_4)
+   0.2066    3.8256 ^ _232_/Y (sky130_fd_sc_hd__nor2_2)
+   0.1171    3.9427 v _234_/Y (sky130_fd_sc_hd__a21boi_2)
+   0.2328    4.1755 ^ _238_/Y (sky130_fd_sc_hd__xnor2_2)
+   0.0010    4.1765 ^ resp_msg[15] (out)
+             4.1765   data arrival time
+
+   5.0000    5.0000   clock clk (rise edge)
+   0.0000    5.0000   clock network delay (propagated)
+   0.0000    5.0000   clock reconvergence pessimism
+  -1.0000    4.0000   output external delay
+             4.0000   data required time
+-------------------------------------------------------------
+             4.0000   data required time
+            -4.1765   data arrival time
+-------------------------------------------------------------
+            -0.1765   slack (VIOLATED)
+
+
+INFO: Running report_tns/report_wns (min/max)
+tns min 0.00
+tns max -0.27
+wns min 0.00
+wns max -0.18

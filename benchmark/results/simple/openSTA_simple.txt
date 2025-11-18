@@ -1,0 +1,70 @@
+OpenSTA 2.7.0 d7cb9be1ca Copyright (c) 2025, Parallax Software, Inc.
+License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>
+
+This is free software, and you are free to change and redistribute it
+under certain conditions; type `show_copying' for details. 
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show_warranty'.
+INFO: Running report_checks -path_delay min
+Startpoint: inp2 (input port clocked by tau2015_clk)
+Endpoint: f1 (falling edge-triggered flip-flop clocked by tau2015_clk)
+Path Group: tau2015_clk
+Path Type: min
+
+    Delay      Time   Description
+-------------------------------------------------------------
+  50.0000   50.0000   clock tau2015_clk (rise edge)
+   0.0000   50.0000   clock network delay (propagated)
+   0.0000   50.0000 ^ input external delay
+   0.0000   50.0000 ^ inp2 (in)
+  -0.9134   49.0866 v u1/Y (NAND2X1)
+   0.0999   49.1865 ^ u4/Y (NOR2X1)
+   0.0000   49.1865 ^ f1/D (DFFNEGX1)
+            49.1865   data arrival time
+
+  25.0000   25.0000   clock tau2015_clk (fall edge)
+  25.0000   50.0000   clock network delay (propagated)
+   0.0000   50.0000   clock reconvergence pessimism
+            50.0000 v f1/CLK (DFFNEGX1)
+   0.0394   50.0394   library hold time
+            50.0394   data required time
+-------------------------------------------------------------
+            50.0394   data required time
+           -49.1865   data arrival time
+-------------------------------------------------------------
+            -0.8529   slack (VIOLATED)
+
+
+INFO: Running report_checks -path_delay max
+Startpoint: f1 (falling edge-triggered flip-flop clocked by tau2015_clk)
+Endpoint: out (output port clocked by tau2015_clk)
+Path Group: tau2015_clk
+Path Type: max
+
+    Delay      Time   Description
+-------------------------------------------------------------
+  25.0000   25.0000   clock tau2015_clk (fall edge)
+  25.0000   50.0000   clock network delay (propagated)
+   0.0000   50.0000 v f1/CLK (DFFNEGX1)
+   0.1417   50.1417 ^ f1/Q (DFFNEGX1)
+   0.0538   50.1954 v u2/Y (INVX1)
+   3.5129   53.7083 ^ u3/Y (INVX2)
+   0.0000   53.7083 ^ out (out)
+            53.7083   data arrival time
+
+  50.0000   50.0000   clock tau2015_clk (rise edge)
+   0.0000   50.0000   clock network delay (propagated)
+   0.0000   50.0000   clock reconvergence pessimism
+ -30.0000   20.0000   output external delay
+            20.0000   data required time
+-------------------------------------------------------------
+            20.0000   data required time
+           -53.7083   data arrival time
+-------------------------------------------------------------
+           -33.7083   slack (VIOLATED)
+
+
+INFO: Running report_tns/report_wns (min/max)
+tns min -0.85
+tns max -33.71
+wns min -0.85
+wns max -33.71

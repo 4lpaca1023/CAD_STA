@@ -1,0 +1,2 @@
+INFO: Launching /home/a1023/STA/OpenTimer/bin/ot-shell
+INFO: Design directory: /home/a1023/STA/benchmark/designs/gcd

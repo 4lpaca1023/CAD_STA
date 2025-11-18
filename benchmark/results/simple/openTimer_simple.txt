@@ -1,0 +1,44 @@
+INFO: Launching /home/a1023/STA/OpenTimer/bin/ot-shell
+INFO: Design directory: /home/a1023/STA/benchmark/designs/simple
+Startpoint    : f1:CLK
+Endpoint      : out
+Analysis type : max
+------------------------------------------------------
+       Type       Delay        Time   Dir  Description
+------------------------------------------------------
+        pin      25.000      25.000       0.000  fall  f1:CLK (DFFNEGX1)
+        pin       2.377      27.377       2.653  fall  f1:Q (DFFNEGX1)
+        pin       0.000      27.377       0.000  fall  u2:A (INVX1)
+        pin       0.138      27.515       0.038  rise  u2:Y (INVX1)
+        pin       0.000      27.515       0.000  rise  u3:A (INVX2)
+        pin       3.208      30.724       0.007  fall  u3:Y (INVX2)
+       port       0.000      30.724       0.000  fall  out
+    arrival                  30.724        data arrival time
+
+       port      20.000      20.000        output port delay
+   required                  20.000        data required time
+------------------------------------------------------
+      slack                 -10.724        VIOLATED
+Startpoint    : f1:CLK
+Endpoint      : out
+Analysis type : min
+------------------------------------------------------
+       Type       Delay        Time   Dir  Description
+------------------------------------------------------
+        pin      25.000      25.000       0.000  fall  f1:CLK (DFFNEGX1)
+        pin       1.474      26.474       1.911  rise  f1:Q (DFFNEGX1)
+        pin       0.000      26.474       0.000  rise  u2:A (INVX1)
+        pin       0.054      26.529       0.009  fall  u2:Y (INVX1)
+        pin       0.000      26.529       0.000  fall  u3:A (INVX2)
+        pin       3.513      30.042       0.074  rise  u3:Y (INVX2)
+       port       0.000      30.042       0.000  rise  out
+    arrival                  30.042        data arrival time
+
+       port      10.000      10.000        output port delay
+   required                  10.000        data required time
+------------------------------------------------------
+      slack                  20.042        MET
+-20.8
+0
+-10.7
+20
