@@ -27,30 +27,35 @@ report_clock
 
 
 puts "--- Max Delay (Setup) Report ---"
-report_timing -delay_type max
+report_timing -delay_type max 
 
+# 報告 Hold Time (Min Delay)
 puts "--- Min Delay (Hold) Report ---"
-report_timing -delay_type min
+report_timing -delay_type min -max_paths 999
 
+# 報告所有違反規則的路徑 (Violators)
 puts "--- Constraint Violators Report ---"
 report_constraint -all_violators
 
-puts "--- report timimg ---"
+echo "## 取得 Max Delay (即 t_pdq)" > paths.rpt
+report_delay_calculation -from [get_pins l1/D] -to [get_pins l1/Q] -max >> paths.rpt
 
-# 取得 Max Delay (即 t_pdq)
-report_delay_calculation -from [get_pins l1/D] -to [get_pins l1/Q] -max
+echo "## 取得 Min Delay (即 t_cdq)" >> paths.rpt
+report_delay_calculation -from [get_pins l1/D] -to [get_pins l1/Q] -min >> paths.rpt
 
-# 取得 Min Delay (即 t_cdq)
-report_delay_calculation -from [get_pins l1/D] -to [get_pins l1/Q] -min
+echo "## 查詢 Setup 時間 (t_setup)" >> paths.rpt
+report_timing -to [get_pins l1/D] -delay_type max -path_type full_clock_expanded >> paths.rpt
 
-# 查詢 Setup 時間 (t_setup) 
-
-# 方法：報告一條終點為該 Latch 的 Setup Path
-report_timing -to [get_pins l1/D] -delay_type max -path_type full_clock_expanded > paths.rpt
-
-# 查詢 Hold 時間 (t_hold)
+echo "## 查詢 Hold 時間 (t_hold)" >> paths.rpt
 report_timing -to [get_pins l1/D] -delay_type min -path_type full_clock_expanded >> paths.rpt
 
+echo "## 最差的兩條 Setup 路徑與 Hold 路徑" >> paths.rpt
+report_timing -delay_type max -max_paths 2 -slack_lesser_than 7777 -input_pins -nets >> paths.rpt
+
+report_timing -delay_type min -max_paths 2 -slack_lesser_than 7777 -input_pins -nets >> paths.rpt 
+
+echo "## 報告所有違反規則的路徑 (Violators)" >> paths.rpt
+report_constraint -all_violators >> paths.rpt
 
 get_timing_path -max_paths 5
 

@@ -16,7 +16,7 @@ set_input_transition 0.15 -min -fall [get_ports tau2015_clk]
 set_input_transition 0.10 -max -rise [get_ports tau2015_clk]
 set_input_transition 0.15 -max -fall [get_ports tau2015_clk]
 
-set_load -pin_load 4 [get_ports out]
+set_load -pin_load 0.01 [get_ports out]
 set_output_delay -10 -min -rise [get_ports out] -clock tau2015_clk
 set_output_delay -10 -min -fall [get_ports out] -clock tau2015_clk
 set_output_delay 30 -max -rise [get_ports out] -clock tau2015_clk
