@@ -1,69 +1,69 @@
-# Latch Timing Analysis: Output Load Sensitivity Comparison
+# 鎖存器時序分析：輸出負載敏感性比較
 
-## 1. Timing Parameters Comparison
+## 1. 時序參數比較
 
-The table below compares the timing parameters under two different output load conditions:
-1.  **Heavy Load (Old):** ~4.0 pF (Caused massive violations)
-2.  **Light Load (New):** ~0.01 pF (Optimized condition)
+下表比較了在兩種不同輸出負載條件下的時序參數：
+1.  **重負載（舊）：** ~4.0 pF（導致大量違規）
+2.  **輕負載（新）：** ~0.01 pF（優化條件）
 
-| Parameter | Symbol | Heavy Load (4pF) | Light Load (0.01pF) | Improvement |
+| 參數 | 符號 | 重負載 (4pF) | 輕負載 (0.01pF) | 改善 |
 | :--- | :--- | :--- | :--- | :--- |
-| **D-to-Q Propagation Delay** | **$t_{pdq}$** | **25.92 ns** | **0.41 ns** | **98.4% Reduction** |
-| **D-to-Q Contamination Delay** | **$t_{cdq}$** | **13.64 ns** | **0.30 ns** | **97.8% Reduction** |
-| **Setup Time** | **$t_{setup}$** | **-0.17 ns** | **-0.17 ns** | No Change (Intrinsic) |
-| **Hold Time** | **$t_{hold}$** | **-0.13 ns** | **-0.13 ns** | No Change (Intrinsic) |
-| **Setup Slack** (at Output) | **-** | **-37.94 ns (VIOLATED)** | **-5.50 ns (VIOLATED)** | Improved by 32.44 ns |
+| **D到Q傳播延遲** | **$t_{pdq}$** | **25.92 ns** | **0.41 ns** | **98.4% Reduction** | 
+| **D-to-Q 污染延遲** | **$t_{cdq}$** | **13.64 ns** | **0.30 ns** | **97.8% 減少** |
+| **設定時間** | **$t_{setup}$** | **-0.17 ns** | **-0.17 ns** | 無變化（內在特性） |
+| **保持時間** | **$t_{hold}$** | **-0.13 ns** | **-0.13 ns** | 無變化（內在特性） |
+| **設定裕量**（在輸出端） | **-** | **-37.94 ns（違規）** | **-5.50 ns（違規）** | 改善 32.44 ns |
 
 ---
 
-## 2. Analysis of Changes
+## 2. 變化分析
 
-### A. Huge Reduction in Delay ($t_{pdq}$ / $t_{cdq}$)
-*   **Observation:** The propagation delay dropped significantly from ~26ns to ~0.4ns.
-*   **Reason:** The Latch output driver no longer needs to charge a massive capacitor. It is now operating within its optimal range (lookup table range).
-*   **Evidence:**
-    *   *Old:* `Rise Delay = 25.9169` (Extrapolated from large load)
-    *   *New:* `Rise Delay = 0.4093` (Interpolated from small load table)
+### A. 延遲顯著減少 ($t_{pdq}$ / $t_{cdq}$)
+*   **觀察：** 傳播延遲從 ~26ns 顯著下降到 ~0.4ns。
+*   **原因：** 鎖存器輸出驅動器不再需要為一個巨大的電容充電，現在運行在其最佳範圍（查找表範圍）內。
+*   **證據：**
+    *   *舊：* `上升延遲 = 25.9169`（從大負載外推）
+    *   *新：* `上升延遲 = 0.4093`（從小負載表內插）
 
-### B. Setup & Hold Times remain constant
-*   **Observation:** $t_{setup}$ and $t_{hold}$ are identical in both reports (-0.17 / -0.13).
-*   **Reason:** These are intrinsic characteristics of the Latch input stage relative to the Clock pin. Changing the **Output Load** does not affect the physics of the **Input Stage** latching data.
+### B. 設定與保持時間保持不變
+*   **觀察：** $t_{setup}$ 和 $t_{hold}$ 在兩份報告中相同（-0.17 / -0.13）。
+*   **原因：** 這些是鎖存器輸入級相對於時鐘引腳的內在特性。改變 **輸出負載** 不會影響 **輸入級** 鎖存數據的物理特性。
 
-### C. Why is there still a Setup Violation? (-5.50 ns)
-Even with the light load, the Setup Slack is still negative (-5.50 ns). Let's analyze the new path:
-*   **Launch Path:**
-    *   Clock Fall (Open): 25.00 ns
-    *   Latch Delay ($t_{pdq}$): **0.48 ns** (Fast!)
-    *   Arrival Time: **25.50 ns**
-*   **Capture Path:**
-    *   Clock Rise (Close): 50.00 ns
-    *   Output External Delay: **-30.00 ns** (This is the culprit!)
-    *   Required Time: 50.00 - 30.00 = **20.00 ns**
-*   **Calculation:**
-    *   Slack = Required (20.00) - Arrival (25.50) = **-5.50 ns**
-*   **Conclusion:** The Latch itself is now fast enough. The violation is caused by an extremely tight **Output External Delay constraint (30ns)** defined in the SDC file, which demands the data to be ready *very early* (relative to the 50ns clock).
+### C. 為什麼仍然有設定違規？（-5.50 ns）
+即使在輕負載下，設定裕量仍為負值（-5.50 ns）。讓我們分析新的路徑：
+*   **觸發路徑：**
+    *   時鐘下降沿（開啟）：25.00 ns
+    *   鎖存延遲 ($t_{pdq}$)：**0.48 ns**（非常快！）
+    *   到達時間：**25.50 ns**
+*   **捕獲路徑：**
+    *   時鐘上升沿（關閉）：50.00 ns
+    *   輸出外部延遲：**-30.00 ns**（這是罪魁禍首！）
+    *   要求時間：50.00 - 30.00 = **20.00 ns**
+*   **計算：**
+    *   裕量 = 要求（20.00） - 到達（25.50） = **-5.50 ns**
+*   **結論：** 鎖存器本身現在已經足夠快。違規是由於 SDC 文件中定義的極其嚴格的 **輸出外部延遲約束（30ns）**，該約束要求數據在時鐘 50ns 週期內 *非常早* 就準備好。
 
 ---
 
-## 3. Detailed Data for Light Load (0.01pF)
+## 3. 輕負載（0.01pF）的詳細數據
 
-### $t_{pdq}$ (Max Delay)
-*   **Source:** `latch/paths.rpt` - `report_delay_calculation -max`
-*   **Value:** **0.409 ns** (Rise)
+### $t_{pdq}$（最大延遲）
+*   **來源：** `latch/paths.rpt` - `report_delay_calculation -max`
+*   **值：** **0.409 ns**（上升）
 ```text
- Rise Delay
-   cell delay = 0.409346 (in library unit)
-     Table is indexed by ... (Y) output_net_total_cap = 0.0103305
+ 上升延遲
+   單元延遲 = 0.409346（以庫單位計）
+     表格索引為 ... (Y) 輸出網絡總電容 = 0.0103305
 ```
 
-### $t_{cdq}$ (Min Delay)
-*   **Source:** `latch/paths.rpt` - `report_delay_calculation -min`
-*   **Value:** **0.300 ns** (Fall)
+### $t_{cdq}$（最小延遲）
+*   **來源：** `latch/paths.rpt` - `report_delay_calculation -min`
+*   **值：** **0.300 ns**（下降）
 ```text
- Fall Delay
-   cell delay = 0.300471 (in library unit)
+ 下降延遲
+   單元延遲 = 0.300471（以庫單位計）
 ```
 
-### Setup / Hold
-*   **Setup:** -0.17 ns (`library setup time`)
-*   **Hold:** -0.13 ns (`library hold time`)
+### 設定 / 保持
+*   **設定：** -0.17 ns（`庫設定時間`）
+*   **保持：** -0.13 ns（`庫保持時間`）
