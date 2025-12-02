@@ -1,0 +1,92 @@
+****************************************
+Report : timing
+	-path_type full_clock_expanded
+	-delay_type max
+	-max_paths 1
+	-sort_by slack
+Design : simple
+Version: W-2024.09-SP2
+Date   : Tue Dec  2 01:13:19 2025
+****************************************
+
+
+  Startpoint: inp1 (input port clocked by tau2015_clk)
+  Endpoint: l1 (negative level-sensitive latch clocked by tau2015_clk)
+  Path Group: tau2015_clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  ------------------------------------------------------------------------------
+  clock tau2015_clk (rise edge)                           0.00       0.00
+  clock network delay (propagated)                        0.00       0.00
+  input external delay                                    5.00       5.00 r
+  inp1 (in)                                               0.00       5.00 r
+  l1/D (sky130_fd_sc_hd__dlxtn_1)                         0.00       5.00 r
+  data arrival time                                                  5.00
+
+  clock tau2015_clk (fall edge)                          25.00      25.00
+  clock source latency                                    0.00      25.00
+  tau2015_clk (in)                                        0.00      25.00 f
+  l1/GATE_N (sky130_fd_sc_hd__dlxtn_1)                    0.00      25.00 f
+  clock reconvergence pessimism                           0.00      25.00
+  time borrowed from endpoint                             0.00      25.00
+  data required time                                                25.00
+  ------------------------------------------------------------------------------
+  data required time                                                25.00
+  data arrival time                                                 -5.00
+  ------------------------------------------------------------------------------
+  slack (MET)                                                       20.00
+
+  Time Borrowing Information
+  ------------------------------------------------------------------
+  tau2015_clk nominal pulse width                        25.00 
+  clock latency difference                                0.00 
+  library setup time                                     -0.17 
+  ------------------------------------------------------------------
+  max time borrow                                        24.83 
+  actual time borrow                                      0.00 
+  ------------------------------------------------------------------
+
+
+1
+****************************************
+Report : timing
+	-path_type full_clock_expanded
+	-delay_type min
+	-max_paths 1
+	-sort_by slack
+Design : simple
+Version: W-2024.09-SP2
+Date   : Tue Dec  2 01:13:19 2025
+****************************************
+
+
+  Startpoint: inp1 (input port clocked by tau2015_clk)
+  Endpoint: l1 (negative level-sensitive latch clocked by tau2015_clk)
+  Path Group: tau2015_clk
+  Path Type: min
+
+  Point                                                   Incr       Path
+  ------------------------------------------------------------------------------
+  clock tau2015_clk (rise edge)                          50.00      50.00
+  clock network delay (propagated)                        0.00      50.00
+  input external delay                                    0.00      50.00 f
+  inp1 (in)                                               0.00      50.00 f
+  l1/D (sky130_fd_sc_hd__dlxtn_1)                         0.00      50.00 f
+  data arrival time                                                 50.00
+
+  clock tau2015_clk (rise edge)                          50.00      50.00
+  clock source latency                                    0.00      50.00
+  tau2015_clk (in)                                        0.00      50.00 r
+  l1/GATE_N (sky130_fd_sc_hd__dlxtn_1)                    0.00      50.00 r
+  clock reconvergence pessimism                           0.00      50.00
+  library hold time                                      -0.13      49.87
+  data required time                                                49.87
+  ------------------------------------------------------------------------------
+  data required time                                                49.87
+  data arrival time                                                -50.00
+  ------------------------------------------------------------------------------
+  slack (MET)                                                        0.13
+
+
+1
