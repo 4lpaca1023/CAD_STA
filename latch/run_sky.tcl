@@ -37,7 +37,15 @@ report_timing -delay_type min -max_paths 999
 puts "--- Constraint Violators Report ---"
 report_constraint -all_violators
 
-echo "## 取得 Max Delay (即 t_pdq)" > paths.rpt
+echo "## 產生路徑報告檔案 paths.rpt" > paths.rpt
+
+echo "## t_pcq" >> paths.rpt
+report_delay_calculation -from [get_pins l1/GATE_N] -to [get_pins l1/Q] -max >> paths.rpt
+
+echo "## t_cdq" >> paths.rpt
+report_delay_calculation -from [get_pins l1/GATE_N] -to [get_pins l1/Q] -min >> paths.rpt
+
+echo "## 取得 Max Delay (即 t_pdq)" >> paths.rpt
 report_delay_calculation -from [get_pins l1/D] -to [get_pins l1/Q] -max >> paths.rpt
 
 echo "## 取得 Min Delay (即 t_cdq)" >> paths.rpt

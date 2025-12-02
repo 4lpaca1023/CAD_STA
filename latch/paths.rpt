@@ -1,9 +1,227 @@
+## 產生路徑報告檔案 paths.rpt
+## t_pcq
+****************************************
+Report : delay_calculation
+Design : simple
+Version: W-2024.09-SP2
+Date   : Tue Dec  2 10:12:33 2025
+****************************************
+
+From pin: l1/GATE_N
+To pin:   l1/Q
+Main Library Units:  1ns  1pF  1kOhm
+
+Library: 'sky130_fd_sc_hd__tt_025C_1v80'
+Library Units:  1ns  1pF  1kOhm
+Library Cell: 'sky130_fd_sc_hd__dlxtn_1'
+arc sense:                       falling_edge
+arc type:                        cell
+Units:  1ns  1pF  1kOhm
+
+
+ Rise Delay
+
+   cell delay = 0.483072 (in library unit)
+     Table is indexed by
+      (X) input_pin_transition = 0.15
+      (Y) output_net_total_cap = 0.0103305
+     Relevant portion of lookup table:
+                   (X)  0.1225      (X)  0.2823
+  (Y)  0.0090      (Z)  0.4635      (Z)  0.5278
+  (Y)  0.0236      (Z)  0.5572      (Z)  0.6214
+
+     Z = A + B*X + C*Y + D*X*Y
+     A =  0.3563           B =  0.4031
+     C =  6.4279           D = -0.0487
+
+  Z = 0.483072
+  scaling result for operating conditions
+  multiplying by 1 gives 0.483072 (in library unit)
+
+ Fall Delay
+
+   cell delay = 0.327199 (in library unit)
+     Table is indexed by
+      (X) input_pin_transition = 0.15
+      (Y) output_net_total_cap = 0.0103305
+     Relevant portion of lookup table:
+                   (X)  0.1225      (X)  0.2823
+  (Y)  0.0090      (Z)  0.3111      (Z)  0.3776
+  (Y)  0.0236      (Z)  0.3620      (Z)  0.4285
+
+     Z = A + B*X + C*Y + D*X*Y
+     A =  0.2287           B =  0.4164
+     C =  3.4884           D = -0.0134
+
+  Z = 0.327199
+  scaling result for operating conditions
+  multiplying by 1 gives 0.327199 (in library unit)
+
+  Cell Delay
+  rise:  0.483072 (in library unit)
+  fall:  0.327199 (in library unit)
+
+Rise delay = 0.483072
+Fall delay = 0.327199
+
+Units:  1ns  1pF  1kOhm
+
+  Transition rise
+   transition = 0.107956 (in library unit)
+     Table is indexed by
+      (X) input_pin_transition = 0.15
+      (Y) output_net_total_cap = 0.0103305
+     Relevant portion of lookup table:
+                   (X)  0.1225      (X)  0.2823
+  (Y)  0.0090      (Z)  0.0959      (Z)  0.0960
+  (Y)  0.0236      (Z)  0.2278      (Z)  0.2275
+
+     Z = A + B*X + C*Y + D*X*Y
+     A =  0.0144           B =  0.0015
+     C =  9.0511           D = -0.1350
+
+  Z = 0.107956
+  scaling result for operating conditions
+  multiplying by 1 gives 0.107956 (in library unit)
+
+
+  Transition fall
+   transition = 0.0591379 (in library unit)
+     Table is indexed by
+      (X) input_pin_transition = 0.15
+      (Y) output_net_total_cap = 0.0103305
+     Relevant portion of lookup table:
+                   (X)  0.1225      (X)  0.2823
+  (Y)  0.0090      (Z)  0.0536      (Z)  0.0536
+  (Y)  0.0236      (Z)  0.1147      (Z)  0.1143
+
+     Z = A + B*X + C*Y + D*X*Y
+     A =  0.0157           B =  0.0015
+     C =  4.2123           D = -0.1653
+
+  Z = 0.0591379
+  scaling result for operating conditions
+  multiplying by 1 gives 0.0591379 (in library unit)
+
+
+Rise transition = 0.107956
+Fall transition = 0.0591379
+1
+## t_cdq
+****************************************
+Report : delay_calculation
+	-min
+Design : simple
+Version: W-2024.09-SP2
+Date   : Tue Dec  2 10:12:33 2025
+****************************************
+
+From pin: l1/GATE_N
+To pin:   l1/Q
+Main Library Units:  1ns  1pF  1kOhm
+
+Library: 'sky130_fd_sc_hd__tt_025C_1v80'
+Library Units:  1ns  1pF  1kOhm
+Library Cell: 'sky130_fd_sc_hd__dlxtn_1'
+arc sense:                       falling_edge
+arc type:                        cell
+Units:  1ns  1pF  1kOhm
+
+
+ Rise Delay
+
+   cell delay = 0.483072 (in library unit)
+     Table is indexed by
+      (X) input_pin_transition = 0.15
+      (Y) output_net_total_cap = 0.0103305
+     Relevant portion of lookup table:
+                   (X)  0.1225      (X)  0.2823
+  (Y)  0.0090      (Z)  0.4635      (Z)  0.5278
+  (Y)  0.0236      (Z)  0.5572      (Z)  0.6214
+
+     Z = A + B*X + C*Y + D*X*Y
+     A =  0.3563           B =  0.4031
+     C =  6.4279           D = -0.0487
+
+  Z = 0.483072
+  scaling result for operating conditions
+  multiplying by 1 gives 0.483072 (in library unit)
+
+ Fall Delay
+
+   cell delay = 0.327199 (in library unit)
+     Table is indexed by
+      (X) input_pin_transition = 0.15
+      (Y) output_net_total_cap = 0.0103305
+     Relevant portion of lookup table:
+                   (X)  0.1225      (X)  0.2823
+  (Y)  0.0090      (Z)  0.3111      (Z)  0.3776
+  (Y)  0.0236      (Z)  0.3620      (Z)  0.4285
+
+     Z = A + B*X + C*Y + D*X*Y
+     A =  0.2287           B =  0.4164
+     C =  3.4884           D = -0.0134
+
+  Z = 0.327199
+  scaling result for operating conditions
+  multiplying by 1 gives 0.327199 (in library unit)
+
+  Cell Delay
+  rise:  0.483072 (in library unit)
+  fall:  0.327199 (in library unit)
+
+Rise delay = 0.483072
+Fall delay = 0.327199
+
+Units:  1ns  1pF  1kOhm
+
+  Transition rise
+   transition = 0.107956 (in library unit)
+     Table is indexed by
+      (X) input_pin_transition = 0.15
+      (Y) output_net_total_cap = 0.0103305
+     Relevant portion of lookup table:
+                   (X)  0.1225      (X)  0.2823
+  (Y)  0.0090      (Z)  0.0959      (Z)  0.0960
+  (Y)  0.0236      (Z)  0.2278      (Z)  0.2275
+
+     Z = A + B*X + C*Y + D*X*Y
+     A =  0.0144           B =  0.0015
+     C =  9.0511           D = -0.1350
+
+  Z = 0.107956
+  scaling result for operating conditions
+  multiplying by 1 gives 0.107956 (in library unit)
+
+
+  Transition fall
+   transition = 0.0591379 (in library unit)
+     Table is indexed by
+      (X) input_pin_transition = 0.15
+      (Y) output_net_total_cap = 0.0103305
+     Relevant portion of lookup table:
+                   (X)  0.1225      (X)  0.2823
+  (Y)  0.0090      (Z)  0.0536      (Z)  0.0536
+  (Y)  0.0236      (Z)  0.1147      (Z)  0.1143
+
+     Z = A + B*X + C*Y + D*X*Y
+     A =  0.0157           B =  0.0015
+     C =  4.2123           D = -0.1653
+
+  Z = 0.0591379
+  scaling result for operating conditions
+  multiplying by 1 gives 0.0591379 (in library unit)
+
+
+Rise transition = 0.107956
+Fall transition = 0.0591379
+1
 ## 取得 Max Delay (即 t_pdq)
 ****************************************
 Report : delay_calculation
 Design : simple
 Version: W-2024.09-SP2
-Date   : Tue Dec  2 09:31:00 2025
+Date   : Tue Dec  2 10:12:33 2025
 ****************************************
 
 From pin: l1/D
@@ -112,7 +330,7 @@ Report : delay_calculation
 	-min
 Design : simple
 Version: W-2024.09-SP2
-Date   : Tue Dec  2 09:31:00 2025
+Date   : Tue Dec  2 10:12:33 2025
 ****************************************
 
 From pin: l1/D
@@ -224,7 +442,7 @@ Report : timing
 	-sort_by slack
 Design : simple
 Version: W-2024.09-SP2
-Date   : Tue Dec  2 09:31:00 2025
+Date   : Tue Dec  2 10:12:33 2025
 ****************************************
 
 
@@ -276,7 +494,7 @@ Report : timing
 	-sort_by slack
 Design : simple
 Version: W-2024.09-SP2
-Date   : Tue Dec  2 09:31:00 2025
+Date   : Tue Dec  2 10:12:33 2025
 ****************************************
 
 
@@ -321,7 +539,7 @@ Report : timing
 	-sort_by slack
 Design : simple
 Version: W-2024.09-SP2
-Date   : Tue Dec  2 09:31:00 2025
+Date   : Tue Dec  2 10:12:33 2025
 ****************************************
 
 
@@ -402,7 +620,7 @@ Report : timing
 	-sort_by slack
 Design : simple
 Version: W-2024.09-SP2
-Date   : Tue Dec  2 09:31:00 2025
+Date   : Tue Dec  2 10:12:33 2025
 ****************************************
 
 
@@ -469,7 +687,7 @@ Report : constraint
 	-path slack_only
 Design : simple
 Version: W-2024.09-SP2
-Date   : Tue Dec  2 09:31:00 2025
+Date   : Tue Dec  2 10:12:33 2025
 ****************************************
 
 
